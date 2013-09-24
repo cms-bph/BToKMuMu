@@ -5,13 +5,13 @@
 // 
 /**\class BToKMuMu BToKMuMu.cc BphAna/BToKMuMu/src/BToKMuMu.cc
 
- Description: [one line class summary]
+   Description: [one line class summary]
 
- Implementation:
-     [Notes on implementation]
+   Implementation:
+   [Notes on implementation]
 */
 //
-// Original Author:  Xin Shi,598 R-016,+41227679822,
+// Original Author:  Xin Shi <Xin.Shi@cern.ch> 
 //         Created:  Tue Sep 24 09:16:20 CEST 2013
 // $Id$
 //
@@ -24,34 +24,94 @@
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
-
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Common/interface/TriggerNames.h"
+
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
+
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
+
+#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
+
+#include <TFile.h>
+#include <TTree.h>
+
+
+using namespace std;
+
 //
 // class declaration
 //
 
 class BToKMuMu : public edm::EDAnalyzer {
-   public:
-      explicit BToKMuMu(const edm::ParameterSet&);
-      ~BToKMuMu();
+public:
+  explicit BToKMuMu(const edm::ParameterSet&);
+  ~BToKMuMu();
 
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 
-   private:
-      virtual void beginJob() ;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
+private:
+  virtual void beginJob() ;
+  virtual void analyze(const edm::Event&, const edm::EventSetup&);
+  virtual void endJob() ;
 
-      virtual void beginRun(edm::Run const&, edm::EventSetup const&);
-      virtual void endRun(edm::Run const&, edm::EventSetup const&);
-      virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
-      virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
+  virtual void beginRun(edm::Run const&, edm::EventSetup const&);
+  virtual void endRun(edm::Run const&, edm::EventSetup const&);
+  virtual void beginLuminosityBlock(edm::LuminosityBlock const&,
+				    edm::EventSetup const&);
+  virtual void endLuminosityBlock(edm::LuminosityBlock const&,
+				  edm::EventSetup const&);
 
-      // ----------member data ---------------------------
+  bool buildBuToKMuMu(const edm::Event &); 
+  void clearVariables(); 
+  bool hasBeamSpot(const edm::Event&);
+  bool hasPrimaryVertex(const edm::Event &); 
+  void hltReport(const edm::Event&);
+
+
+  // ----------member data ---------------------------
+  // --- begin input from python file --- 
+  string OutputFileName_; 
+  bool BuildBuToKMuMu_; 
+
+  // labels 
+  edm::InputTag TriggerResultsLabel_;
+  edm::InputTag BeamSpotLabel_;
+  edm::InputTag VertexLabel_;
+  vector<string> TriggerNames_; 
+  vector<string> LastFilterNames_;
+
+  // --- end input from python file --- 
+
+ 
+  // Across the event 
+  map<string, string> mapTriggerToLastFilter_;
+  reco::BeamSpot beamSpot_;  
+  edm::ESHandle<MagneticField> bFieldHandle_;
+  reco::Vertex primaryVertex_;
+
+  // ---- Root Variables ---- 
+  TFile* fout_;
+  TTree* tree_;
+  
+  unsigned int run, event, lumiblock, nprivtx; 
+  vector<string> *triggernames;
+  vector<int> *triggerprescales;
+
+
+  // variables to monitor 
+  TDatime t_begin_, t_now_ ;
+  int n_processed_, n_selected_; 
+
 };
 
 //
@@ -65,19 +125,25 @@ class BToKMuMu : public edm::EDAnalyzer {
 //
 // constructors and destructor
 //
-BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig)
-
+BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
+  OutputFileName_(iConfig.getParameter<string>("OutputFileName")),
+  BuildBuToKMuMu_(iConfig.getUntrackedParameter<bool>("BuildBuToKMuMu")),
+  tree_(0), 
+  triggernames(0), triggerprescales(0)
 {
-   //now do what ever initialization is needed
-
+  //now do what ever initialization is needed
+  
+  assert(TriggerNames_.size() == LastFilterNames_.size());
+  for (size_t i = 0; i < TriggerNames_.size(); ++i)
+    mapTriggerToLastFilter_[TriggerNames_[i]] = LastFilterNames_[i];
 }
 
 
 BToKMuMu::~BToKMuMu()
 {
  
-   // do anything here that needs to be done at desctruction time
-   // (e.g. close files, deallocate resources etc.)
+  // do anything here that needs to be done at desctruction time
+  // (e.g. close files, deallocate resources etc.)
 
 }
 
@@ -90,19 +156,27 @@ BToKMuMu::~BToKMuMu()
 void
 BToKMuMu::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-   using namespace edm;
+  n_processed_ += 1; 
+  clearVariables(); 
+  run = iEvent.id().run() ;
+  event = iEvent.id().event() ;
+  lumiblock = iEvent.luminosityBlock(); 
+  hltReport(iEvent);
 
+  if ( hasBeamSpot(iEvent) ) {
+    iSetup.get<IdealMagneticFieldRecord>().get(bFieldHandle_);      
+    
+    if ( bFieldHandle_.isValid() && hasPrimaryVertex(iEvent) ) { 
+      
+      if ( BuildBuToKMuMu_ && buildBuToKMuMu(iEvent) ) { 
+	tree_->Fill();
+	n_selected_ += 1;
+      }
+    }
+  }
 
-
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
+  clearVariables(); 
+  
 }
 
 
@@ -110,12 +184,47 @@ BToKMuMu::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 void 
 BToKMuMu::beginJob()
 {
+  t_begin_.Set(); 
+  printf("\n ---------- Begin Job ---------- \n");
+  t_begin_.Print();
+
+  n_processed_ = 0;
+  n_selected_ = 0;
+
+  fout_ = new TFile(OutputFileName_.c_str(), "RECREATE");
+  fout_->cd();
+
+  tree_ = new TTree ("tree", "BToKMuMu");
+
+  tree_->Branch("run", &run, "run/i");
+  tree_->Branch("event", &event, "event/i");
+  tree_->Branch("lumiblock", &lumiblock, "lumiblock/i");
+  tree_->Branch("nprivtx", &nprivtx, "nprivtx/i");
+  tree_->Branch("triggernames", &triggernames);
+  tree_->Branch("triggerprescales", &triggerprescales);
+
+  
+
+
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 BToKMuMu::endJob() 
 {
+  fout_->cd();
+  tree_->Write();
+  fout_->Close();
+
+  t_now_.Set(); 
+  printf(" \n ---------- End Job ---------- \n" ) ;
+  t_now_.Print();  
+  printf(" processed: %i \n selected: %i \n \
+ duration: %i sec \n rate: %g evts/sec\n",
+	 n_processed_, n_selected_, 
+	 t_now_.Convert() - t_begin_.Convert(), 
+	 float(n_processed_)/(t_now_.Convert()-t_begin_.Convert()) );
+  
 }
 
 // ------------ method called when starting to processes a run  ------------
@@ -151,6 +260,94 @@ BToKMuMu::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   desc.setUnknown();
   descriptions.addDefault(desc);
 }
+
+
+void 
+BToKMuMu::clearVariables(){
+  run = 0; 
+  event = 0;
+  lumiblock = 0;
+  nprivtx = 0; 
+  triggernames->clear();
+  triggerprescales->clear();
+ 
+}
+
+void
+BToKMuMu::hltReport(const edm::Event& iEvent)
+{
+  edm::Handle<edm::TriggerResults> hltTriggerResults;
+  try {iEvent.getByLabel( TriggerResultsLabel_, hltTriggerResults ); }
+  catch ( ... ) { edm::LogInfo("myHLT") 
+      << __LINE__ << " : couldn't get handle on HLT Trigger" ; }
+  
+  HLTConfigProvider hltConfig_;
+  if (hltTriggerResults.isValid()) {
+    const edm::TriggerNames& triggerNames_ = iEvent.triggerNames(*hltTriggerResults);
+
+    for (unsigned int itrig = 0; itrig < hltTriggerResults->size(); itrig++){
+
+      // Only consider the triggered case. 
+      if ((*hltTriggerResults)[itrig].accept() == 1){ 
+
+	string triggername = triggerNames_.triggerName(itrig);	
+	int triggerprescale = hltConfig_.prescaleValue(itrig, triggername);
+
+	// Loop over our interested HLT trigger names to find if this event contains. 
+	for (unsigned int it=0; it<TriggerNames_.size(); it++){
+	  if (triggername.find(TriggerNames_[it]) != string::npos) {
+	    // save the no versioned case 
+	    triggernames->push_back(TriggerNames_[it]); 
+	    triggerprescales->push_back(triggerprescale); 
+
+	  }}}}}
+}
+
+
+bool
+BToKMuMu::hasBeamSpot(const edm::Event& iEvent)
+{
+  edm::Handle<reco::BeamSpot> beamSpotHandle;
+  iEvent.getByLabel(BeamSpotLabel_, beamSpotHandle);
+  
+  if ( ! beamSpotHandle.isValid() ) {
+    edm::LogError("myBeam") << "No beam spot available from EventSetup" ; 
+    return false; 
+  }
+  
+  beamSpot_ = *beamSpotHandle; 
+  return true; 
+}
+
+
+bool
+BToKMuMu::hasPrimaryVertex(const edm::Event& iEvent)
+{
+  edm::Handle<reco::VertexCollection> recVtxs;
+  iEvent.getByLabel(VertexLabel_, recVtxs);
+  nprivtx = recVtxs->size(); 
+
+  for (std::vector<reco::Vertex>::const_iterator iVertex = recVtxs->begin();
+       iVertex != recVtxs->end(); iVertex++) { 
+    primaryVertex_ = *(iVertex); 
+    if (primaryVertex_.isValid()) break; 
+  }
+
+  if (!primaryVertex_.isValid()) return false; 
+ 
+  return true; 
+}
+
+bool 
+BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
+{
+  
+  cout << "here>>> " << endl ; 
+  return false; 
+}
+
+
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(BToKMuMu);
