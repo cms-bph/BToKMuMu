@@ -37,6 +37,13 @@ process.ntuple = cms.EDAnalyzer(
     OutputFileName = cms.string("BuToKMuMu.root"),
     BuildBuToKMuMu = cms.untracked.bool(True), 
 
+    # particle properties 
+    MuonMass = cms.untracked.double(0.10565837), 
+    MuonMassErr = cms.untracked.double(0.10565837*1e-6), 
+    KaonMass = cms.untracked.double(0.493677), 
+    KaonMassErr = cms.untracked.double(1.6e-5),
+    BuMass = cms.untracked.double(5.27925),
+
     # labels
     TriggerResultsLabel = cms.InputTag("TriggerResults","", 'HLT'),
     BeamSpotLabel = cms.InputTag('offlineBeamSpot'),
@@ -50,7 +57,22 @@ process.ntuple = cms.EDAnalyzer(
     MuonMinPt = cms.untracked.double(3.0), # [GeV]
     MuonMaxEta = cms.untracked.double(2.2),  
     MuonMaxDcaBs = cms.untracked.double(2.0), # [cm]
-    
+ 
+    MuMuMinPt = cms.untracked.double(6.9),      # [GeV/c]
+    MuMuMinInvMass = cms.untracked.double(1.0), # [GeV/c2]
+    MuMuMaxInvMass = cms.untracked.double(4.8), # [GeV/c2]
+
+    MuMuMinVtxCl = cms.untracked.double(0.05), 
+    MuMuMinLxySigmaBs = cms.untracked.double(3.0), 
+    MuMuMaxDca = cms.untracked.double(0.5), # [cm]
+    MuMuMinCosAlphaBs = cms.untracked.double(0.9),
+
+    # pre-selection cuts 
+    TrkMinPt = cms.untracked.double(0.6), #[GeV/c]
+    TrkMaxDcaSigBs = cms.untracked.double(1.2), # hadron DCA/sigma w/respect to BS 
+    TrkMaxR = cms.untracked.double(110.0), # [cm]
+    TrkMaxZ = cms.untracked.double(280.0), # [cm]
+   
 )
 
 # Remove not used from PAT 
