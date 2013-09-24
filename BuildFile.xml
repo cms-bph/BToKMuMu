@@ -1,6 +1,17 @@
 <use name="FWCore/Framework"/>
 <use name="FWCore/PluginManager"/>
 <use name="FWCore/ParameterSet"/>
+<use name="MagneticField/Engine"/>
+
+<use name="TrackingTools/Records"/>
+<use name="HLTrigger/HLTcore"/>
+<use name="DataFormats/RecoCandidate"/>
+<use name="DataFormats/VertexReco"/>
+<use name="DataFormats/PatCandidates"/>
+<use name="TrackingTools/TransientTrack"/>
+<use name="RecoVertex/KinematicFit"/>
+<use name="RecoVertex/KinematicFitPrimitives"/>
+
 <flags EDM_PLUGIN="1"/>
 <export>
    <lib name="1"/>

@@ -38,8 +38,11 @@
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "DataFormats/PatCandidates/interface/Muon.h"
 
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+
 
 #include <TFile.h>
 #include <TTree.h>
@@ -74,6 +77,7 @@ private:
   bool buildBuToKMuMu(const edm::Event &); 
   void clearVariables(); 
   bool hasBeamSpot(const edm::Event&);
+  bool hasGoodMuonDcaBs (const reco::TransientTrack, double &, double &); 
   bool hasPrimaryVertex(const edm::Event &); 
   void hltReport(const edm::Event&);
 
@@ -87,8 +91,15 @@ private:
   edm::InputTag TriggerResultsLabel_;
   edm::InputTag BeamSpotLabel_;
   edm::InputTag VertexLabel_;
+  edm::InputTag MuonLabel_;
+
   vector<string> TriggerNames_; 
   vector<string> LastFilterNames_;
+
+  // pre-selection cuts
+  double MuonMinPt_; 
+  double MuonMaxEta_; 
+  double MuonMaxDcaBs_; 
 
   // --- end input from python file --- 
 
@@ -106,6 +117,9 @@ private:
   unsigned int run, event, lumiblock, nprivtx; 
   vector<string> *triggernames;
   vector<int> *triggerprescales;
+
+  // B+ and B- 
+  int nb; 
 
 
   // variables to monitor 
@@ -128,8 +142,21 @@ private:
 BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   OutputFileName_(iConfig.getParameter<string>("OutputFileName")),
   BuildBuToKMuMu_(iConfig.getUntrackedParameter<bool>("BuildBuToKMuMu")),
+
+  // labels 
+  TriggerResultsLabel_(iConfig.getParameter<edm::InputTag>("TriggerResultsLabel")),
+  BeamSpotLabel_(iConfig.getParameter<edm::InputTag>("BeamSpotLabel")),
+  VertexLabel_(iConfig.getParameter<edm::InputTag>("VertexLabel")),
+  MuonLabel_(iConfig.getParameter<edm::InputTag>("MuonLabel")),
+
+  // pre-selection cuts 
+  MuonMinPt_(iConfig.getUntrackedParameter<double>("MuonMinPt")),
+  MuonMaxEta_(iConfig.getUntrackedParameter<double>("MuonMaxEta")),
+  MuonMaxDcaBs_(iConfig.getUntrackedParameter<double>("MuonMaxDcaBs")),
+
   tree_(0), 
-  triggernames(0), triggerprescales(0)
+  triggernames(0), triggerprescales(0), 
+  nb(0) 
 {
   //now do what ever initialization is needed
   
@@ -203,9 +230,6 @@ BToKMuMu::beginJob()
   tree_->Branch("triggernames", &triggernames);
   tree_->Branch("triggerprescales", &triggerprescales);
 
-  
-
-
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
@@ -270,7 +294,7 @@ BToKMuMu::clearVariables(){
   nprivtx = 0; 
   triggernames->clear();
   triggerprescales->clear();
- 
+  nb = 0; 
 }
 
 void
@@ -341,12 +365,60 @@ BToKMuMu::hasPrimaryVertex(const edm::Event& iEvent)
 bool 
 BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
 {
+  // init variables 
+  edm::Handle< vector<pat::Muon> > patMuonHandle;
+  iEvent.getByLabel(MuonLabel_, patMuonHandle);
+  if( patMuonHandle->size() < 2 ) return false;
   
-  cout << "here>>> " << endl ; 
+  double DCAmumBS, DCAmumBSErr, DCAmupBS, DCAmupBSErr;
+
+  // ---------------------------------
+  // loop 1: mu-
+  // ---------------------------------
+  for (vector<pat::Muon>::const_iterator iMuonM = patMuonHandle->begin(); 
+       iMuonM != patMuonHandle->end(); iMuonM++){
+    
+    reco::TrackRef muTrackm = iMuonM->innerTrack(); 
+    if ( muTrackm.isNull() ) continue; 
+    
+    if ( (muTrackm->charge() != -1) ||
+	 (muTrackm->pt() < MuonMinPt_) ||
+	 (fabs(muTrackm->eta()) > MuonMaxEta_)) continue;
+    
+    // check mu- DCA to beam spot 
+    const reco::TransientTrack muTrackmTT(muTrackm, &(*bFieldHandle_));   
+    
+    if ( ! hasGoodMuonDcaBs(muTrackmTT, DCAmumBS, DCAmumBSErr) ) 
+      continue ;
+    
+    nb++; 
+  } // close mu- loop 
+  
+  if ( nb > 0) {
+    edm::LogInfo("myBu") << "Found " << nb << " Bu -> K mu mu."; 
+    return true; 
+  }
+
   return false; 
 }
 
 
+bool 
+BToKMuMu::hasGoodMuonDcaBs (const reco::TransientTrack muTrackTT, 
+			    double &muDcaBs, double &muDcaBsErr)
+{
+  TrajectoryStateClosestToPoint theDCAXBS = 
+    muTrackTT.trajectoryStateClosestToPoint(
+     GlobalPoint(beamSpot_.position().x(),
+		 beamSpot_.position().y(),beamSpot_.position().z()));
+  
+  if ( !theDCAXBS.isValid() )  return false; 
+  
+  muDcaBs = theDCAXBS.perigeeParameters().transverseImpactParameter();
+  muDcaBsErr = theDCAXBS.perigeeError().transverseImpactParameterError();
+  if ( muDcaBs > MuonMaxDcaBs_ )   return false; 
+  return true; 
+}
 
 
 //define this as a plug-in

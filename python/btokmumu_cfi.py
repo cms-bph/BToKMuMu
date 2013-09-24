@@ -41,9 +41,15 @@ process.ntuple = cms.EDAnalyzer(
     TriggerResultsLabel = cms.InputTag("TriggerResults","", 'HLT'),
     BeamSpotLabel = cms.InputTag('offlineBeamSpot'),
     VertexLabel = cms.InputTag('offlinePrimaryVertices'),
+    MuonLabel = cms.InputTag('cleanPatMuonsTriggerMatch'),
     TrackLabel = cms.InputTag('cleanPatTrackCands'), 
     TriggerNames = cms.vstring([]),
     LastFilterNames = cms.vstring([]),
+
+    # HLT-trigger cuts 
+    MuonMinPt = cms.untracked.double(3.0), # [GeV]
+    MuonMaxEta = cms.untracked.double(2.2),  
+    MuonMaxDcaBs = cms.untracked.double(2.0), # [cm]
     
 )
 
