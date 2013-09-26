@@ -29,6 +29,19 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.load("PhysicsTools.PatAlgos.patSequences_cff")
 
+# add track candidates
+from PhysicsTools.PatAlgos.tools.trackTools import *
+makeTrackCandidates(process,
+                    label        = 'TrackCands',                  
+                    tracks       = cms.InputTag('generalTracks'), 
+                    particleType = 'pi+',                         
+                    preselection = 'pt > 0.1',                     
+                    selection    = 'pt > 0.1',                     
+                    isolation    = {},                            
+                    isoDeposits  = [],                            
+                    mcAs         = None          
+)    
+
 from PhysicsTools.PatAlgos.tools.coreTools import *
 removeMCMatching(process, ['All'], outputInProcess = False)
 
@@ -73,6 +86,9 @@ process.ntuple = cms.EDAnalyzer(
     TrkMaxR = cms.untracked.double(110.0), # [cm]
     TrkMaxZ = cms.untracked.double(280.0), # [cm]
    
+    BMinVtxCl = cms.untracked.double(0.01), 
+    BMinMass = cms.untracked.double(2.0), # [GeV/c2] B+ mass = 5279 MeV 
+    BMaxMass = cms.untracked.double(8.0), # [GeV/c2] B+ mass = 5279 MeV 
 )
 
 # Remove not used from PAT 

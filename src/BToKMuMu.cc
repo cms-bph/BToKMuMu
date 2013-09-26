@@ -39,6 +39,7 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/PatCandidates/interface/GenericParticle.h"
 
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
@@ -46,6 +47,7 @@
 
 #include "RecoVertex/KinematicFitPrimitives/interface/KinematicParticleFactoryFromTransientTrack.h"
 #include "RecoVertex/KinematicFit/interface/KinematicParticleVertexFitter.h"
+#include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 
 
 #include <TFile.h>
@@ -95,14 +97,20 @@ private:
 
   void clearVariables(); 
   bool hasBeamSpot(const edm::Event&);
+  bool hasGoodBuMass(RefCountedKinematicTree, double &); 
+  bool hasGoodBuVertex(const reco::TrackRef, const reco::TrackRef, const reco::TrackRef, 
+		       double &, double &, RefCountedKinematicTree &); 
   bool hasGoodMuonDcaBs (const reco::TransientTrack, double &, double &); 
   bool hasGoodMuMuVertex (const reco::TransientTrack, const reco::TransientTrack,
 			  reco::TransientTrack &, reco::TransientTrack &, 
 			  double &, double &, double &, double &, double &,
 			  double &, double &, double &);
-
+  bool hasGoodTrack(const edm::Event&, const pat::GenericParticle, double &);
+  bool hasGoodTrackDcaBs (const reco::TransientTrack, double &, double &); 
   bool hasPrimaryVertex(const edm::Event &); 
   void hltReport(const edm::Event&);
+  bool matchMuonTrack (const edm::Event&, const reco::TrackRef);
+
 
 
   // ----------member data ---------------------------
@@ -122,6 +130,7 @@ private:
   edm::InputTag BeamSpotLabel_;
   edm::InputTag VertexLabel_;
   edm::InputTag MuonLabel_;
+  edm::InputTag TrackLabel_;
 
   vector<string> TriggerNames_; 
   vector<string> LastFilterNames_;
@@ -141,6 +150,9 @@ private:
   double MuMuMaxInvMass_; 
   double MuMuMinLxySigmaBs_; 
   double MuMuMinCosAlphaBs_; 
+  double BMinVtxCl_; 
+  double BMinMass_; 
+  double BMaxMass_; 
 
   // --- end input from python file --- 
 
@@ -196,6 +208,7 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   BeamSpotLabel_(iConfig.getParameter<edm::InputTag>("BeamSpotLabel")),
   VertexLabel_(iConfig.getParameter<edm::InputTag>("VertexLabel")),
   MuonLabel_(iConfig.getParameter<edm::InputTag>("MuonLabel")),
+  TrackLabel_(iConfig.getParameter<edm::InputTag>("TrackLabel")),
 
   // pre-selection cuts 
   MuonMinPt_(iConfig.getUntrackedParameter<double>("MuonMinPt")),
@@ -214,7 +227,11 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   MuMuMaxInvMass_(iConfig.getUntrackedParameter<double>("MuMuMaxInvMass")),
   MuMuMinLxySigmaBs_(iConfig.getUntrackedParameter<double>("MuMuMinLxySigmaBs")), 
   MuMuMinCosAlphaBs_(iConfig.getUntrackedParameter<double>("MuMuMinCosAlphaBs")), 
+  BMinVtxCl_(iConfig.getUntrackedParameter<double>("BMinVtxCl")),
+  BMinMass_(iConfig.getUntrackedParameter<double>("BMinMass")),
+  BMaxMass_(iConfig.getUntrackedParameter<double>("BMaxMass")),
  
+  // root variables  
   tree_(0), 
   triggernames(0), triggerprescales(0), 
   nb(0) 
@@ -430,13 +447,19 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
   edm::Handle< vector<pat::Muon> > patMuonHandle;
   iEvent.getByLabel(MuonLabel_, patMuonHandle);
   if( patMuonHandle->size() < 2 ) return false;
-  
+ 
+  edm::Handle< vector<pat::GenericParticle> >thePATTrackHandle;
+  iEvent.getByLabel(TrackLabel_, thePATTrackHandle);
+    
   double DCAmumBS, DCAmumBSErr, DCAmupBS, DCAmupBSErr;
   double mumutrk_R, mumutrk_Z, DCAmumu; 
   reco::TransientTrack refitMupTT, refitMumTT; 
   double mu_mu_vtx_cl, mu_mu_pt, mu_mu_mass, mu_mu_mass_err; 
   double MuMuLSBS, MuMuLSBSErr; 
   double MuMuCosAlphaBS, MuMuCosAlphaBSErr;
+  double trk_pt, DCATrkBS, DCATrkBSErr; 
+  double b_vtx_chisq, b_vtx_cl, b_mass; 
+  RefCountedKinematicTree vertexFitTree; 
 
   // ---------------------------------
   // loop 1: mu-
@@ -487,10 +510,27 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
 			       MuMuLSBS, MuMuLSBSErr,
 			       MuMuCosAlphaBS, MuMuCosAlphaBSErr) ) continue; 
       
-      
+      // ---------------------------------
+      // loop 3: hadron track 
+      // ---------------------------------
+      for ( vector<pat::GenericParticle>::const_iterator iTrack
+	      = thePATTrackHandle->begin();
+	    iTrack != thePATTrackHandle->end(); ++iTrack ) {
+	
+	if (! hasGoodTrack(iEvent, *iTrack, trk_pt) ) continue; 
 
-      nb++; 
+	// compute track DCA to beam spot 
+	reco::TrackRef theTrack = iTrack->track(); 
+	const reco::TransientTrack theTrackTT(theTrack, &(*bFieldHandle_));   
+	if (! hasGoodTrackDcaBs(theTrackTT, DCATrkBS, DCATrkBSErr) ) continue ; 
 
+	if (! hasGoodBuVertex(muTrackm, muTrackp, theTrack,
+			      b_vtx_chisq, b_vtx_cl, vertexFitTree) ) continue ; 
+
+	if (! hasGoodBuMass(vertexFitTree, b_mass) ) continue;
+ 
+	nb++; 
+      } // close track loop
     } // close mu+ loop
   } // close mu- loop 
   
@@ -713,6 +753,122 @@ BToKMuMu::calLS (double Vx, double Vy, double Vz,
 		      (Vy-Wy) * (Vz-Wz) * 2.*WyzCov) / *deltaD;
   else *deltaDErr = 0.;
 }
+
+
+bool 
+BToKMuMu::hasGoodTrack(const edm::Event& iEvent, 
+		       const pat::GenericParticle iTrack, 
+		       double & trk_pt)
+{
+   reco::TrackRef theTrackRef = iTrack.track(); 
+   if ( theTrackRef.isNull() ) return false; 
+
+   // veto muon tracks
+   if ( matchMuonTrack(iEvent, theTrackRef) ) return false; 
+   
+   // check the track kinematics
+   trk_pt = theTrackRef->pt(); 
+
+   if ( theTrackRef->pt() < TrkMinPt_ ) return false; 
+
+   return true;
+}
+
+bool
+BToKMuMu::matchMuonTrack (const edm::Event& iEvent, 
+			  const reco::TrackRef theTrackRef)
+{
+  if ( theTrackRef.isNull() ) return false;
+
+  edm::Handle< vector<pat::Muon> > thePATMuonHandle; 
+  iEvent.getByLabel(MuonLabel_, thePATMuonHandle);
+  
+  reco::TrackRef muTrackRef; 
+  for (vector<pat::Muon>::const_iterator iMuon = thePATMuonHandle->begin();
+       iMuon != thePATMuonHandle->end(); iMuon++){
+
+    muTrackRef = iMuon->innerTrack();
+    if ( muTrackRef.isNull() ) continue; 
+
+    if (muTrackRef == theTrackRef) return true; 
+  }
+  
+  return false; 
+}
+
+
+bool 
+BToKMuMu::hasGoodTrackDcaBs (const reco::TransientTrack TrackTT, 
+			     double &DcaBs, double &DcaBsErr)
+{
+  TrajectoryStateClosestToPoint theDCAXBS = 
+    TrackTT.trajectoryStateClosestToPoint(
+     GlobalPoint(beamSpot_.position().x(),
+		 beamSpot_.position().y(),beamSpot_.position().z()));
+  
+  if ( !theDCAXBS.isValid() )  return false; 
+  
+  DcaBs = theDCAXBS.perigeeParameters().transverseImpactParameter();
+  DcaBsErr = theDCAXBS.perigeeError().transverseImpactParameterError();
+  if ( DcaBs/DcaBsErr > TrkMaxDcaSigBs_ )   return false; 
+  return true; 
+}
+
+bool 
+BToKMuMu::hasGoodBuVertex(const reco::TrackRef mu1Track,
+			      const reco::TrackRef mu2Track,
+			      const reco::TrackRef theTrack, 
+			      double & b_vtx_chisq, double & b_vtx_cl, 
+			      RefCountedKinematicTree &vertexFitTree) 
+{
+  // do vertex fit for Bu
+  KinematicParticleFactoryFromTransientTrack pFactory;
+  reco::TransientTrack mu1TT(mu1Track, &(*bFieldHandle_) );
+  reco::TransientTrack mu2TT(mu2Track, &(*bFieldHandle_) );
+  reco::TransientTrack trkTT(theTrack, &(*bFieldHandle_) );
+
+  float chi = 0.;
+  float ndf = 0.;
+  vector<RefCountedKinematicParticle> vFitMCParticles;
+  vFitMCParticles.push_back(pFactory.particle(mu1TT, MuonMass_,
+					      chi, ndf, MuonMassErr_));
+  vFitMCParticles.push_back(pFactory.particle(mu2TT, MuonMass_,
+					      chi, ndf, MuonMassErr_));
+  vFitMCParticles.push_back(pFactory.particle(trkTT, KaonMass_, chi, 
+					      ndf, KaonMassErr_));
+  KinematicParticleVertexFitter fitter;   
+  vertexFitTree = fitter.fit(vFitMCParticles);
+  if (!vertexFitTree->isValid()) return false; 
+
+  vertexFitTree->movePointerToTheTop();
+  RefCountedKinematicVertex bDecayVertexMC = vertexFitTree->currentDecayVertex();
+  if ( !bDecayVertexMC->vertexIsValid()) return false; 
+
+  b_vtx_chisq = bDecayVertexMC->chiSquared(); 
+  if ( bDecayVertexMC->chiSquared()<0
+       || bDecayVertexMC->chiSquared()>1000 ) return false; 
+
+  RefCountedKinematicVertex b_KV = vertexFitTree->currentDecayVertex();
+  b_vtx_cl = ChiSquaredProbability((double)(b_KV->chiSquared()),
+				   (double)(b_KV->degreesOfFreedom()));
+
+  if ( b_vtx_cl < BMinVtxCl_ ) return false; 
+  
+  return true; 
+}
+
+
+bool 
+BToKMuMu::hasGoodBuMass(RefCountedKinematicTree vertexFitTree, 
+			double & b_mass)
+{
+  vertexFitTree->movePointerToTheTop();
+  RefCountedKinematicParticle b_KP = vertexFitTree->currentParticle();
+  b_mass = b_KP->currentState().mass(); 
+  if ( b_mass < BMinMass_ || b_mass > BMaxMass_ ) return false;  
+  return true; 
+}
+
 
 
 //define this as a plug-in
