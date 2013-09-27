@@ -190,6 +190,12 @@ private:
   vector<string> *mumtriglastfilter, *muptriglastfilter; 
   vector<double> *mumpt, *muppt, *mumeta, *mupeta; 
  
+  // kaon track 
+  vector<int> *trkchg; // +1 for K+, -1 for K-
+  vector<double> *trkpx, *trkpy, *trkpz, *trkpt; 
+  vector<double> *trkdcabs, *trkdcabserr; 
+
+
   // B+ and B- 
   int nb; 
 
@@ -265,6 +271,9 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   mumnormchi2(0), mupnormchi2(0), mumdxyvtx(0), mupdxyvtx(0),
   mumdzvtx(0), mupdzvtx(0), mumtriglastfilter(0), muptriglastfilter(0), 
   mumpt(0), muppt(0), mumeta(0), mupeta(0), 
+
+  trkchg(0), trkpx(0), trkpy(0), trkpz(0), trkpt(0),  
+  trkdcabs(0), trkdcabserr(0), 
 
   nb(0) 
 {
@@ -383,7 +392,16 @@ BToKMuMu::beginJob()
   tree_->Branch("mumeta", &mumeta);
   tree_->Branch("mupeta", &mupeta);
 
-}
+  tree_->Branch("trkchg", &trkchg);
+  tree_->Branch("trkpx", &trkpx);
+  tree_->Branch("trkpy", &trkpy);
+  tree_->Branch("trkpz", &trkpz);
+  tree_->Branch("trkpt", &trkpt);
+  tree_->Branch("trkdcabs", &trkdcabs);
+  tree_->Branch("trkdcabserr", &trkdcabserr);
+
+  tree_->Branch("nb", &nb, "nb/I");
+ }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
@@ -466,6 +484,10 @@ BToKMuMu::clearVariables(){
   muptriglastfilter->clear(); 
   mumpt->clear(); muppt->clear(); 
   mumeta->clear(); mupeta->clear(); 
+
+  trkchg->clear(); trkpx->clear(); trkpy->clear(); trkpz->clear(); 
+  trkpt->clear();
+  trkdcabs->clear(); trkdcabserr->clear(); 
 
   nb = 0; 
 }
@@ -632,7 +654,13 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
 			  MuMuLSBS, MuMuLSBSErr, 
 			  MuMuCosAlphaBS, MuMuCosAlphaBSErr, 
 			  mu_mu_mass, mu_mu_mass_err); 
-	
+
+	saveSoftMuonVariables(*iMuonM, *iMuonP, muTrackm, muTrackp); 
+	trkpt->push_back(trk_pt); 
+	trkdcabs->push_back(DCATrkBS); 
+	trkdcabserr->push_back(DCATrkBSErr); 
+
+
       } // close track loop
     } // close mu+ loop
   } // close mu- loop 
