@@ -110,8 +110,10 @@ private:
   bool hasPrimaryVertex(const edm::Event &); 
   void hltReport(const edm::Event&);
   bool matchMuonTrack (const edm::Event&, const reco::TrackRef);
-
-
+  void saveDimuVariables(double, double, double, double, double, double, 
+			 double, double, double, double, double, double,
+			 double, double);
+  void saveSoftMuonVariables(pat::Muon, pat::Muon, reco::TrackRef, reco::TrackRef); 
 
   // ----------member data ---------------------------
   // --- begin input from python file --- 
@@ -171,6 +173,23 @@ private:
   vector<string> *triggernames;
   vector<int> *triggerprescales;
 
+  // dimuon 
+  vector<double> *mumdcabs, *mumdcabserr, *mumpx, *mumpy, *mumpz; 
+  vector<double> *mupdcabs, *mupdcabserr, *muppx, *muppy, *muppz; 
+  vector<double> *mumutrkr, *mumutrkz , *mumudca; 
+  vector<double> *mumuvtxcl, *mumulsbs, *mumulsbserr;  
+  vector<double> *mumucosalphabs, *mumucosalphabserr; 
+  vector<double> *mumumass, *mumumasserr; 
+
+  // soft muon variables 
+  vector<bool>   *mumisgoodmuon, *mupisgoodmuon ; 
+  vector<int>    *mumnpixhits, *mupnpixhits, *mumnpixlayers, *mupnpixlayers; 
+  vector<int>    *mumntrkhits, *mupntrkhits, *mumntrklayers, *mupntrklayers; 
+  vector<double> *mumnormchi2, *mupnormchi2; 
+  vector<double> *mumdxyvtx, *mupdxyvtx, *mumdzvtx, *mupdzvtx; 
+  vector<string> *mumtriglastfilter, *muptriglastfilter; 
+  vector<double> *mumpt, *muppt, *mumeta, *mupeta; 
+ 
   // B+ and B- 
   int nb; 
 
@@ -234,6 +253,19 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   // root variables  
   tree_(0), 
   triggernames(0), triggerprescales(0), 
+
+  mumdcabs(0), mumdcabserr(0), mumpx(0), mumpy(0), mumpz(0), 
+  mupdcabs(0),  mupdcabserr(0), muppx(0),  muppy(0), muppz(0), 
+  mumutrkr(0), mumutrkz(0), mumudca(0),  mumuvtxcl(0),  mumulsbs(0), 
+  mumulsbserr(0), mumucosalphabs(0),  mumucosalphabserr(0), 
+  mumumass(0), mumumasserr(0), 
+  mumisgoodmuon(0), mupisgoodmuon(0), 
+  mumnpixhits(0), mupnpixhits(0), mumnpixlayers(0), mupnpixlayers(0), 
+  mumntrkhits(0), mupntrkhits(0), mumntrklayers(0), mupntrklayers(0), 
+  mumnormchi2(0), mupnormchi2(0), mumdxyvtx(0), mupdxyvtx(0),
+  mumdzvtx(0), mupdzvtx(0), mumtriglastfilter(0), muptriglastfilter(0), 
+  mumpt(0), muppt(0), mumeta(0), mupeta(0), 
+
   nb(0) 
 {
   //now do what ever initialization is needed
@@ -308,6 +340,49 @@ BToKMuMu::beginJob()
   tree_->Branch("triggernames", &triggernames);
   tree_->Branch("triggerprescales", &triggerprescales);
 
+  tree_->Branch("mumdcabs", &mumdcabs);
+  tree_->Branch("mumdcabserr", &mumdcabserr);
+  tree_->Branch("mumpx", &mumpx);
+  tree_->Branch("mumpy", &mumpy);
+  tree_->Branch("mumpz", &mumpz);
+  tree_->Branch("mupdcabs", &mupdcabs);
+  tree_->Branch("mupdcabserr", &mupdcabserr);
+  tree_->Branch("muppx", &muppx);
+  tree_->Branch("muppy", &muppy);
+  tree_->Branch("muppz", &muppz);
+  tree_->Branch("mumutrkr", &mumutrkr);
+  tree_->Branch("mumutrkz", &mumutrkz);
+  tree_->Branch("mumudca", &mumudca);
+  tree_->Branch("mumuvtxcl", &mumuvtxcl);
+  tree_->Branch("mumulsbs", &mumulsbs);
+  tree_->Branch("mumulsbserr", &mumulsbserr);
+  tree_->Branch("mumucosalphabs", &mumucosalphabs);
+  tree_->Branch("mumucosalphabserr", &mumucosalphabserr);
+  tree_->Branch("mumumass", &mumumass);
+  tree_->Branch("mumumasserr", &mumumasserr);
+  tree_->Branch("mumisgoodmuon", &mumisgoodmuon);
+  tree_->Branch("mupisgoodmuon", &mupisgoodmuon);
+  tree_->Branch("mumnpixhits", &mumnpixhits);
+  tree_->Branch("mupnpixhits", &mupnpixhits);
+  tree_->Branch("mumnpixlayers", &mumnpixlayers);
+  tree_->Branch("mupnpixlayers", &mupnpixlayers);
+  tree_->Branch("mumntrkhits", &mumntrkhits);
+  tree_->Branch("mupntrkhits", &mupntrkhits);
+  tree_->Branch("mumntrklayers", &mumntrklayers);
+  tree_->Branch("mupntrklayers", &mupntrklayers);
+  tree_->Branch("mumnormchi2", &mumnormchi2);
+  tree_->Branch("mupnormchi2", &mupnormchi2);
+  tree_->Branch("mumdxyvtx", &mumdxyvtx);
+  tree_->Branch("mupdxyvtx", &mupdxyvtx);
+  tree_->Branch("mumdzvtx", &mumdzvtx);
+  tree_->Branch("mupdzvtx", &mupdzvtx);
+  tree_->Branch("mumtriglastfilter", &mumtriglastfilter);
+  tree_->Branch("muptriglastfilter", &muptriglastfilter);
+  tree_->Branch("mumpt", &mumpt);
+  tree_->Branch("muppt", &muppt);
+  tree_->Branch("mumeta", &mumeta);
+  tree_->Branch("mupeta", &mupeta);
+
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
@@ -372,6 +447,26 @@ BToKMuMu::clearVariables(){
   nprivtx = 0; 
   triggernames->clear();
   triggerprescales->clear();
+
+  mumdcabs->clear();  mumdcabserr->clear();  mumpx->clear();   mumpy->clear();  
+  mumpz->clear(); 
+  mupdcabs->clear();  mupdcabserr->clear();  muppx->clear();   muppy->clear(); 
+  muppz->clear(); 
+  mumutrkr->clear(); mumutrkz->clear(); 
+  mumudca->clear();  mumuvtxcl->clear();   mumulsbs->clear();  mumulsbserr->clear(); 
+  mumucosalphabs->clear();  mumucosalphabserr->clear();
+  mumumass->clear(); mumumasserr->clear(); 
+  mumisgoodmuon->clear();  mupisgoodmuon->clear(); 
+  mumnpixhits->clear();  mupnpixhits->clear();  mumnpixlayers->clear(); 
+  mupnpixlayers->clear(); 
+  mumntrkhits->clear();  mupntrkhits->clear();  mumntrklayers->clear();
+  mupntrklayers->clear(); 
+  mumnormchi2->clear(); mupnormchi2->clear(); mumdxyvtx->clear(); mupdxyvtx->clear(); 
+  mumdzvtx->clear(); mupdzvtx->clear();  mumtriglastfilter->clear();
+  muptriglastfilter->clear(); 
+  mumpt->clear(); muppt->clear(); 
+  mumeta->clear(); mupeta->clear(); 
+
   nb = 0; 
 }
 
@@ -530,6 +625,14 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
 	if (! hasGoodBuMass(vertexFitTree, b_mass) ) continue;
  
 	nb++; 
+
+	// save the tree variables 
+	saveDimuVariables(DCAmumBS, DCAmumBSErr, DCAmupBS, DCAmupBSErr,
+			  mumutrk_R, mumutrk_Z, DCAmumu, mu_mu_vtx_cl, 
+			  MuMuLSBS, MuMuLSBSErr, 
+			  MuMuCosAlphaBS, MuMuCosAlphaBSErr, 
+			  mu_mu_mass, mu_mu_mass_err); 
+	
       } // close track loop
     } // close mu+ loop
   } // close mu- loop 
@@ -869,6 +972,69 @@ BToKMuMu::hasGoodBuMass(RefCountedKinematicTree vertexFitTree,
   return true; 
 }
 
+
+void 
+BToKMuMu::saveDimuVariables(double DCAmumBS, double DCAmumBSErr, 
+			    double DCAmupBS, double DCAmupBSErr,
+			    double mumutrk_R, double mumutrk_Z, 
+			    double DCAmumu,  double mu_mu_vtx_cl, 
+			    double MuMuLSBS, double MuMuLSBSErr, 
+			    double MuMuCosAlphaBS, double MuMuCosAlphaBSErr,
+			    double mu_mu_mass, double mu_mu_mass_err) 
+  
+{
+  mumdcabs->push_back(DCAmumBS);
+  mumdcabserr->push_back(DCAmumBSErr);
+
+  mupdcabs->push_back(DCAmupBS);
+  mupdcabserr->push_back(DCAmupBSErr);
+
+  mumutrkr->push_back(mumutrk_R);
+  mumutrkz->push_back(mumutrk_Z); 
+  mumudca->push_back(DCAmumu);
+  mumuvtxcl->push_back(mu_mu_vtx_cl); 
+  mumulsbs->push_back(MuMuLSBS);
+  mumulsbserr->push_back(MuMuLSBSErr);
+  mumucosalphabs->push_back(MuMuCosAlphaBS);
+  mumucosalphabserr->push_back(MuMuCosAlphaBSErr); 
+
+  mumumass->push_back(mu_mu_mass); 
+  mumumasserr->push_back(mu_mu_mass_err); 
+}
+
+
+void 
+BToKMuMu::saveSoftMuonVariables(pat::Muon iMuonM, pat::Muon iMuonP, 
+				reco::TrackRef muTrackm, reco::TrackRef muTrackp)
+{
+  mumisgoodmuon->push_back(muon::isGoodMuon(iMuonM, muon::TMOneStationTight)); 
+  mupisgoodmuon->push_back(muon::isGoodMuon(iMuonP, muon::TMOneStationTight)); 
+  mumnpixhits->push_back(muTrackm->hitPattern().numberOfValidPixelHits()); 
+  mupnpixhits->push_back(muTrackp->hitPattern().numberOfValidPixelHits()); 
+  mumnpixlayers->push_back(muTrackm->hitPattern().pixelLayersWithMeasurement()); 
+  mupnpixlayers->push_back(muTrackp->hitPattern().pixelLayersWithMeasurement()); 
+
+  mumntrkhits->push_back(muTrackm->hitPattern().numberOfValidTrackerHits()); 
+  mupntrkhits->push_back(muTrackp->hitPattern().numberOfValidTrackerHits()); 
+  mumntrklayers->push_back(muTrackm->hitPattern().trackerLayersWithMeasurement()); 
+  mupntrklayers->push_back(muTrackp->hitPattern().trackerLayersWithMeasurement()); 
+
+  mumnormchi2->push_back(muTrackm->normalizedChi2()); 
+  mupnormchi2->push_back(muTrackp->normalizedChi2()); 
+
+  mumdxyvtx->push_back(muTrackm->dxy(primaryVertex_.position())); 
+  mupdxyvtx->push_back(muTrackp->dxy(primaryVertex_.position())); 
+	  
+  mumdzvtx->push_back(muTrackm->dz(primaryVertex_.position())); 
+  mupdzvtx->push_back(muTrackp->dz(primaryVertex_.position())); 
+
+  mumpt->push_back(muTrackm->pt()); 
+  muppt->push_back(muTrackp->pt()); 
+  
+  mumeta->push_back(muTrackm->eta()); 
+  mupeta->push_back(muTrackp->eta()); 
+  
+}
 
 
 //define this as a plug-in
