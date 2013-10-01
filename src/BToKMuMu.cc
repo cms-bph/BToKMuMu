@@ -54,39 +54,9 @@ Implementation:
 #include <TTree.h>
 #include <TMath.h>
 #include <TLorentzVector.h>
-#include <TH1.h>
+
 
 using namespace std;
-
-const int MUONMINUS_PDG_ID = 13;
-const int KPLUS_PDG_ID = 321;
-const int BPLUS_PDG_ID = 521;	
-
-// Structures
-struct HistArgs{
-  char name[128];
-  char title[128];
-  int n_bins;
-  double x_min;
-  double x_max;
-};
-
-enum HistName{
-  h_mumumass,
-  h_kplusmass,
-  kHistNameSize
-};
-
-// Global hist args
-
-HistArgs hist_args[kHistNameSize] = {
-  // name, title, n_bins, x_min, x_max
-  {"h_mumumass", "#mu^{+}#mu^{-} invariant mass; M(#mu^{+}#mu^{-}) [GeV]", 100, 2, 4},
-  {"h_kplusmass", "Kplus mass; M(Kplus) [GeV]", 100, 0.2, 0.8},
-};
-
-// Define histograms
-TH1F *BToKMuMuFigures[kHistNameSize];
 
 //
 // class declaration
@@ -107,95 +77,48 @@ private:
 
   virtual void beginRun(edm::Run const&, edm::EventSetup const&);
   virtual void endRun(edm::Run const&, edm::EventSetup const&);
-  virtual void beginLuminosityBlock(edm::LuminosityBlock const&,edm::EventSetup const&);
-  virtual void endLuminosityBlock(edm::LuminosityBlock const&,edm::EventSetup const&);
+  virtual void beginLuminosityBlock(edm::LuminosityBlock const&,
+edm::EventSetup const&);
+  virtual void endLuminosityBlock(edm::LuminosityBlock const&,
+edm::EventSetup const&);
 
   bool buildBuToKMuMu(const edm::Event &);
   bool calClosestApproachTracks(const reco::TransientTrack,
-								const reco::TransientTrack,
-								double&, double &, double &);
+const reco::TransientTrack,
+double&, double &, double &);
   void calCosAlpha (double, double, double, double, double,
-					double, double, double, double, double,
-					double, double, double, double,
-					double, double, double, double,
-					double*, double*);
+double, double, double, double, double,
+double, double, double, double,
+double, double, double, double,
+double*, double*);
   void calLS (double, double, double, double, double, double, double,
-			  double, double, double, double, double, double, double,
-			  double, double, double, double, double*, double*);
-    void computeLS (double, double, double, double, double, double, double, double, double,
-					double, double, double, double, double, double, double, double, double,
-					double* deltaD, double* deltaDErr);
-
-  void computeCosAlpha (double Vx, double Vy, double Vz, double Wx, double Wy, double Wz,
-                        double VxErr2, double VyErr2, double VzErr2, double VxyCov,
-						double VxzCov, double VyzCov, double WxErr2, double WyErr2,
-						double WzErr2, double WxyCov, double WxzCov, double WyzCov,
-						double* cosAlpha, double* cosAlphaErr);
-  
-  void computeCtau(RefCountedKinematicTree, double &, double &);
+double, double, double, double, double, double, double,
+double, double, double, double, double*, double*);
 
   void clearVariables();
-
   bool hasBeamSpot(const edm::Event&);
-  bool hasDimuon(const edm::Event &);
-  bool hasGoodClosestApproachTracks (const reco::TransientTrack,
-                                     const reco::TransientTrack, double &);
-  bool hasGoodDimuonKMass(const edm::Event&); 
-
   bool hasGoodBuMass(RefCountedKinematicTree, double &);
   bool hasGoodBuVertex(const reco::TrackRef, const reco::TrackRef, const reco::TrackRef,
-					   double &, double &, RefCountedKinematicTree &);
- /* bool hasGoodBuVertex(reco::TrackRef, reco::TrackRef,
-                       reco::TrackRef, RefCountedKinematicTree&);
-  bool hasGoodBuVertex(const pat::CompositeCandidate, const pat::CompositeCandidate,
-                       RefCountedKinematicTree &, RefCountedKinematicTree &);
-  bool hasGoodBuVertex(const pat::CompositeCandidate, const pat::CompositeCandidate,
-                       RefCountedKinematicTree&);
-  bool hasGoodBuVertex(const pat::CompositeCandidate, const pat::CompositeCandidate,
-                       const pat::GenericParticle, RefCountedKinematicTree&);
-  */
+double &, double &, RefCountedKinematicTree &);
   bool hasGoodMuonDcaBs (const reco::TransientTrack, double &, double &);
   bool hasGoodMuMuVertex (const reco::TransientTrack, const reco::TransientTrack,
-						  reco::TransientTrack &, reco::TransientTrack &,
-						  double &, double &, double &, double &, double &,
-						  double &, double &, double &);
+reco::TransientTrack &, reco::TransientTrack &,
+double &, double &, double &, double &, double &,
+double &, double &, double &);
   bool hasGoodTrack(const edm::Event&, const pat::GenericParticle, double &);
   bool hasGoodTrackDcaBs (const reco::TransientTrack, double &, double &);
-  bool hasGoodTrackDcaPoint (const reco::TransientTrack, const GlobalPoint,
-                             double, double &, double &);
-  bool hasKplus(const edm::Event &); 
   bool hasPrimaryVertex(const edm::Event &);
   void hltReport(const edm::Event&);
-
-  bool isGenKCharged(const reco::Candidate *);
-  bool isGenMuonP(const reco::Candidate *);
   bool matchMuonTrack (const edm::Event&, const reco::TrackRef);
-  bool matchMuonTracks (const edm::Event&, const vector<reco::TrackRef>);
-  bool matchKshortTrack (const edm::Event&, const reco::TrackRef);
-  bool matchPrimaryVertexTracks (); 
-
-  void saveBuToKMuMu(RefCountedKinematicTree);
-  void saveBuVertex(RefCountedKinematicTree);
-  void saveBuCosAlpha(RefCountedKinematicTree);
-  void saveBuLsig(RefCountedKinematicTree);
-  void saveBuCtau(RefCountedKinematicTree); 
-
-  void saveGenInfo(const edm::Event&);
-  void saveKVariables(reco::VertexCompositeCandidate);
-  void saveSoftMuonVariables(pat::Muon, pat::Muon, reco::TrackRef, reco::TrackRef); 
   void saveDimuVariables(double, double, double, double, double, double,
-						 double, double, double, double, double, double,
-						 double, double);
+double, double, double, double, double, double,
+double, double);
   void saveSoftMuonVariables(pat::Muon, pat::Muon, reco::TrackRef, reco::TrackRef);
-  void saveMuonTriggerMatches(const pat::Muon, const pat::Muon); 
 
   // ----------member data ---------------------------
   // --- begin input from python file ---
   string OutputFileName_;
   bool BuildBuToKMuMu_;
-  bool SaveGenInfo_;
-  edm::InputTag GenParticlesLabel_;
-  vector<string> TriggerNames_, LastFilterNames_;
 
   // particle properties
   ParticleMass MuonMass_;
@@ -210,6 +133,9 @@ private:
   edm::InputTag VertexLabel_;
   edm::InputTag MuonLabel_;
   edm::InputTag TrackLabel_;
+
+  vector<string> TriggerNames_;
+  vector<string> LastFilterNames_;
 
   // pre-selection cuts
   double MuonMinPt_;
@@ -229,9 +155,6 @@ private:
   double BMinVtxCl_;
   double BMinMass_;
   double BMaxMass_;
-  ParticleMass MuonMass_;
-  float MuonMassErr_;
-  pat::CompositeCandidateCollection DimuonCandidates_; 
 
   // --- end input from python file ---
 
@@ -280,22 +203,6 @@ private:
   vector<double> *bvtxcl, *bvtxx, *bvtxxerr, *bvtxy, *bvtxyerr, *bvtxz, *bvtxzerr;
   vector<double> *bcosalphabs, *bcosalphabserr, *blsbs, *blsbserr, *bctau, *bctauerr; 
 
-  vector<int> *bmu1chg, *bmu2chg, *bk1chg; // +1 for mu+, -1 for mu-
-  vector<double> *bmu1px, *bmu1py, *bmu1pz, *bmu1mass, *bmu1masserr,
-    *bmu2px, *bmu2py, *bmu2pz, *bmu2mass, *bmu2masserr,
-    *bkpx, *bkpy, *bkpz, *bkmass, *bkmasserr; 
-
-  // GenInfo
-  // vector<int> *genbchg; // +1 for b+, -1 for b-
-  vector<double> *genbpx, *genbpy, *genbpz;
-  vector<double> *genkpx, *genkpy, *genkpz;
-  vector<double> *genmumpx, *genmumpy, *genmumpz;
-  vector<double> *genmuppx, *genmuppy, *genmuppz;
-  
- 
-};
-
-
 
   // variables to monitor
   TDatime t_begin_, t_now_ ;
@@ -317,8 +224,6 @@ private:
 BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   OutputFileName_(iConfig.getParameter<string>("OutputFileName")),
   BuildBuToKMuMu_(iConfig.getUntrackedParameter<bool>("BuildBuToKMuMu")),
-
-  SaveGenInfo_(iConfig.getUntrackedParameter<bool>("SaveGenInfo")),
 
   // particle properties
   MuonMass_(iConfig.getUntrackedParameter<double>("MuonMass")),
@@ -376,16 +281,7 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
 
   nb(0),bchg(0),bpx(0),bpxerr(0),bpy(0),bpyerr(0),bpz(0),bpzerr(0),bmass(0),bmasserr(0),
   bvtxcl(0),bvtxx(0),bvtxxerr(0),bvtxy(0),bvtxyerr(0),bvtxz(0),bvtxzerr(0),
-  bcosalphabs(0),bcosalphabserr(0),blsbs(0),blsbserr(0),bctau(0),bctauerr(0),
-  bmu1chg(0),bmu2chg(0),bk1chg(0),
-  bmu1px(0),bmu1py(0),bmu1pz(0),bmu1mass(0),bmu1masserr(0),
-  bmu2px(0),bmu2py(0),bmu2pz(0),bmu2mass(0),bmu2masserr(0),
-  bkpx(0),bkpy(0),bkpz(0),bkmass(0),bkmasserr(0),
-
-  genbpx(0),genbpy(0),genbpz(0),
-  genkpx(0),genkpy(0),genkpz(0),
-  genmumpx(0),genmumpy(0),genmumpz(0),
-  genmuppx(0),genmuppy(0),genmuppz(0),
+  bcosalphabs(0),bcosalphabserr(0),blsbs(0),blsbserr(0),bctau(0),bctauerr(0)
 
 {
   //now do what ever initialization is needed
@@ -423,11 +319,9 @@ BToKMuMu::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   if ( hasBeamSpot(iEvent) ) {
     iSetup.get<IdealMagneticFieldRecord>().get(bFieldHandle_);
     
-    if ( bFieldHandle_.isValid() && hasPrimaryVertex(iEvent) 
-		 && hasGoodDimuonKMass(iEvent) && 	&& hasDimuon(iEvent)
-		 && hasKplus(iEvent)) {
-          if (SaveGenInfo_) saveGenInfo(iEvent);  
+    if ( bFieldHandle_.isValid() && hasPrimaryVertex(iEvent) ) {
       
+      if ( BuildBuToKMuMu_ && buildBuToKMuMu(iEvent) ) {
 tree_->Fill();
 n_selected_ += 1;
       }
@@ -452,12 +346,6 @@ BToKMuMu::beginJob()
 
   fout_ = new TFile(OutputFileName_.c_str(), "RECREATE");
   fout_->cd();
-
-  
-  for(int i=0; i<kHistNameSize; i++) {
-    BToKstarMuMuFigures[i] = new TH1F(hist_args[i].name, hist_args[i].title,
-									  hist_args[i].n_bins,
-									  hist_args[i].x_min, hist_args[i].x_max);
 
   tree_ = new TTree ("tree", "BToKMuMu");
 
@@ -532,7 +420,7 @@ BToKMuMu::beginJob()
   tree_->Branch("bvtxcl", &bvtxcl);
   tree_->Branch("bvtxx", &bvtxx);
   tree_->Branch("bvtxxerr", &bvtxxerr);
-  tree_->Branch("bvtxy", &bvtxy,);
+  tree_->Branch("bvtxy", &bvtxy);
   tree_->Branch("bvtxyerr", &bvtxyerr);
   tree_->Branch("bvtxz", &bvtxz);
   tree_->Branch("bvtxzerr", &bvtxzerr);
@@ -542,39 +430,6 @@ BToKMuMu::beginJob()
   tree_->Branch("blsbserr", &blsbserr);
   tree_->Branch("bctau", &bctau);
   tree_->Branch("bctauerr", &bctauerr);
-  tree_->Branch("bmu1chg", &bmu1chg);
-  tree_->Branch("bmu2chg", &bmu2chg);
-  tree_->Branch("bk1chg", &bk1chg);
-  tree_->Branch("bmu1px", &bmu1px);
-  tree_->Branch("bmu1py", &bmu1py);
-  tree_->Branch("bmu1pz", &bmu1pz);
-  tree_->Branch("bmu1mass", &bmu1mass);
-  tree_->Branch("bmu1masserr", &bmu1masserr);
-  tree_->Branch("bmu2px", &bmu2px);
-  tree_->Branch("bmu2py", &bmu2py);
-  tree_->Branch("bmu2pz", &bmu2pz);
-  tree_->Branch("bmu2mass", &bmu2mass);
-  tree_->Branch("bmu2masserr", &bmu2masserr);
-  tree_->Branch("bkpx", &bkpx);
-  tree_->Branch("bkpy", &bkpy);
-  tree_->Branch("bkpz", &bkpz);
-  tree_->Branch("bkmass", &bkmass);
-  tree_->Branch("bkmasserr", &bkmasserr);
-
- if (SaveGenInfo_) {
-  tree_->Branch("genbpx", &genbpx);
-  tree_->Branch("genbpy", &genbpy);
-  tree_->Branch("genbpz", &genbpz);
-  tree_->Branch("genkpx", &genkpx);
-  tree_->Branch("genkpy", &genkpy);
-  tree_->Branch("genkpz", &genkpz);
-  tree_->Branch("genmumpx", &genmumpx);
-  tree_->Branch("genmumpy", &genmumpy);
-  tree_->Branch("genmumpz", &genmumpz);
-  tree_->Branch("genmuppx", &genmuppx);
-  tree_->Branch("genmuppy", &genmuppy);
-  tree_->Branch("genmuppz", &genmuppz);
-}
 
  }
 
@@ -584,10 +439,6 @@ BToKMuMu::endJob()
 {
   fout_->cd();
   tree_->Write();
-
-    for(int i = 0; i < kHistNameSize; i++) {
-    BToKstarMuMuFigures[i]->Write();
-    BToKstarMuMuFigures[i]->Delete();
   fout_->Close();
 
   t_now_.Set();
@@ -668,24 +519,12 @@ BToKMuMu::clearVariables(){
   trkpt->clear();
   trkdcabs->clear(); trkdcabserr->clear();
 
-  nb = 0;
-  bpx->clear(); bpxerr->clear(); bpy->clear(); bpyerr->clear(); bpz->clear(); bpzerr->clear();
+  nb = 0; bpx->clear(); bpxerr->clear(); bpy->clear(); bpyerr->clear(); bpz->clear(); bpzerr->clear();
   bchg->clear(); bmass->clear(); bmasserr->clear();
   bvtxcl->clear(); bvtxx->clear(); bvtxxerr->clear(); bvtxy->clear(); bvtxyerr->clear();
   bvtxz->clear(); bvtxzerr->clear(); bcosalphabs->clear(); bcosalphabserr->clear();
   blsbs->clear(); blsbserr->clear(); bctau->clear(); bctauerr->clear();
 
-  bmu1chg->clear(); bmu2chg->clear(); bk1chg->clear();
-  bmu1px->clear(); bmu1py->clear(); bmu1pz->clear(); bmu1mass->clear(); bmu1masserr->clear();
-  bmu2px->clear(); bmu2py->clear(); bmu2pz->clear(); bmu2mass->clear(); bmu2masserr->clear();
-  bkpx->clear(); bkpy->clear(); bkpz->clear(); bkmass->clear(); bkmasserr->clear();
-
-    if (SaveGenInfo_) {
-    genbpx->clear(); genbpy->clear(); genbpz->clear();
-    genkpx->clear(); genkpy->clear(); genkpz->clear();
-    genmumpx->clear(); genmumpy->clear(); genmumpz->clear();
-    genmuppx->clear(); genmuppy->clear(); genmuppz->clear();
-  }
 }
 
 void
@@ -698,10 +537,10 @@ BToKMuMu::hltReport(const edm::Event& iEvent)
   
   HLTConfigProvider hltConfig_;
   if (hltTriggerResults.isValid()) {
-    const edm::TriggerNames& triggerNames_ = .triggerNames(*hltTriggerResults);
+    const edm::TriggerNames& triggerNames_ = iEvent.triggerNames(*hltTriggerResults);
 
     for (unsigned int itrig = 0; itrig < hltTriggerResults->size(); itrig++){
-iEvent
+
       // Only consider the triggered case.
       if ((*hltTriggerResults)[itrig].accept() == 1){
 
