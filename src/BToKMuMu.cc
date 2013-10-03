@@ -114,8 +114,9 @@ double &, double &, double &);
 double, double, double, double, double, double,
 double, double);
   void saveSoftMuonVariables(pat::Muon, pat::Muon, reco::TrackRef, reco::TrackRef);
-  void saveBuToKMuMu(RefCountedKinematicTree); 
-  void saveBuVertex(RefCountedKinematicTree); 
+  void saveBuToKMuMu(RefCountedKinematicTree);
+  void saveBuVertex(RefCountedKinematicTree);
+  void saveBuCosAlpha(RefCountedKinematicTree);
 
   // ----------member data ---------------------------
   // --- begin input from python file ---
@@ -203,7 +204,7 @@ double, double);
   vector<int> *bchg; // +1 for b+, -1 for b-
   vector<double> *bpx, *bpxerr, *bpy, *bpyerr, *bpz, *bpzerr, *bmass, *bmasserr;
   vector<double> *bvtxcl, *bvtxx, *bvtxxerr, *bvtxy, *bvtxyerr, *bvtxz, *bvtxzerr;
-  vector<double> *bcosalphabs, *bcosalphabserr, *blsbs, *blsbserr, *bctau, *bctauerr; 
+  vector<double> *bcosalphabs, *bcosalphabserr, *blsbs, *blsbserr, *bctau, *bctauerr;
 
 
   // variables to monitor
@@ -696,10 +697,11 @@ saveSoftMuonVariables(*iMuonM, *iMuonP, muTrackm, muTrackp);
 trkpt->push_back(trk_pt);
 trkdcabs->push_back(DCATrkBS);
 trkdcabserr->push_back(DCATrkBSErr);
-bchg->push_back(iTrack->charge()); 
+bchg->push_back(iTrack->charge());
 
-saveBuToKMuMu(vertexFitTree); 
+saveBuToKMuMu(vertexFitTree);
 saveBuVertex(vertexFitTree);
+saveBuCosAlpha(vertexFitTree);
 
       } // close track loop
     } // close mu+ loop
@@ -1134,5 +1136,44 @@ BToKMuMu::saveBuVertex(RefCountedKinematicTree vertexFitTree){
   bvtxzerr->push_back(sqrt( abs(b_KV->error().czz()) ));
   
 }
+
+void
+BToKMuMu::saveBuCosAlpha(RefCountedKinematicTree vertexFitTree)
+{
+  // alpha is the angle in the transverse plane between the B0 momentum
+  // and the seperation between the B0 vertex and the beamspot
+
+  vertexFitTree->movePointerToTheTop();
+  RefCountedKinematicParticle b_KP = vertexFitTree->currentParticle();
+  RefCountedKinematicVertex b_KV = vertexFitTree->currentDecayVertex();
+  
+  
+  double cosAlphaBS, cosAlphaBSErr;
+  calCosAlpha(b_KP->currentState().globalMomentum().x(),
+b_KP->currentState().globalMomentum().y(),
+b_KP->currentState().globalMomentum().z(),
+b_KV->position().x() - beamSpot_.position().x(),
+b_KV->position().y() - beamSpot_.position().y(),
+b_KV->position().z() - beamSpot_.position().z(),
+b_KP->currentState().kinematicParametersError().matrix()(3,3),
+b_KP->currentState().kinematicParametersError().matrix()(4,4),
+b_KP->currentState().kinematicParametersError().matrix()(5,5),
+b_KP->currentState().kinematicParametersError().matrix()(3,4),
+b_KP->currentState().kinematicParametersError().matrix()(3,5),
+b_KP->currentState().kinematicParametersError().matrix()(4,5),
+b_KV->error().cxx() + beamSpot_.covariance()(0,0),
+b_KV->error().cyy() + beamSpot_.covariance()(1,1),
+b_KV->error().czz() + beamSpot_.covariance()(2,2),
+b_KV->error().matrix()(0,1) + beamSpot_.covariance()(0,1),
+b_KV->error().matrix()(0,2) + beamSpot_.covariance()(0,2),
+b_KV->error().matrix()(1,2) + beamSpot_.covariance()(1,2),
+&cosAlphaBS,&cosAlphaBSErr);	
+
+  bcosalphabs->push_back(cosAlphaBS);
+  bcosalphabserr->push_back(cosAlphaBSErr);
+  
+}
+
+
 //define this as a plug-in
 DEFINE_FWK_MODULE(BToKMuMu);
