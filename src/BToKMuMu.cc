@@ -114,6 +114,8 @@ double &, double &, double &);
 double, double, double, double, double, double,
 double, double);
   void saveSoftMuonVariables(pat::Muon, pat::Muon, reco::TrackRef, reco::TrackRef);
+  void saveBuToKMuMu(RefCountedKinematicTree); 
+  void saveBuVertex(RefCountedKinematicTree); 
 
   // ----------member data ---------------------------
   // --- begin input from python file ---
@@ -694,7 +696,10 @@ saveSoftMuonVariables(*iMuonM, *iMuonP, muTrackm, muTrackp);
 trkpt->push_back(trk_pt);
 trkdcabs->push_back(DCATrkBS);
 trkdcabserr->push_back(DCATrkBSErr);
+bchg->push_back(iTrack->charge()); 
 
+saveBuToKMuMu(vertexFitTree); 
+saveBuVertex(vertexFitTree);
 
       } // close track loop
     } // close mu+ loop
@@ -1099,6 +1104,35 @@ reco::TrackRef muTrackm, reco::TrackRef muTrackp)
   
 }
 
+void
+BToKMuMu::saveBuToKMuMu(RefCountedKinematicTree vertexFitTree){
 
+  vertexFitTree->movePointerToTheTop(); // B+ or B-
+  RefCountedKinematicParticle b_KP = vertexFitTree->currentParticle();
+
+  bpx->push_back(b_KP->currentState().globalMomentum().x());
+  bpxerr->push_back( sqrt( b_KP->currentState().kinematicParametersError().matrix()(3,3) ) );
+  bpy->push_back(b_KP->currentState().globalMomentum().y());
+  bpyerr->push_back( sqrt( b_KP->currentState().kinematicParametersError().matrix()(4,4) ) );
+  bpz->push_back(b_KP->currentState().globalMomentum().z());
+  bpzerr->push_back( sqrt( b_KP->currentState().kinematicParametersError().matrix()(5,5) ) );
+  bmass->push_back(b_KP->currentState().mass());
+  bmasserr->push_back( sqrt( b_KP->currentState().kinematicParametersError().matrix()(6,6) ) );
+}
+
+void
+BToKMuMu::saveBuVertex(RefCountedKinematicTree vertexFitTree){
+  vertexFitTree->movePointerToTheTop();
+  RefCountedKinematicVertex b_KV = vertexFitTree->currentDecayVertex();
+  bvtxcl->push_back( ChiSquaredProbability((double)(b_KV->chiSquared()),
+                     (double)(b_KV->degreesOfFreedom())) );
+  bvtxx->push_back((*b_KV).position().x());
+  bvtxxerr->push_back(sqrt( abs(b_KV->error().cxx()) ));
+  bvtxy->push_back((*b_KV).position().y());
+  bvtxyerr->push_back(sqrt( abs(b_KV->error().cyy()) ));
+  bvtxz->push_back((*b_KV).position().z());
+  bvtxzerr->push_back(sqrt( abs(b_KV->error().czz()) ));
+  
+}
 //define this as a plug-in
 DEFINE_FWK_MODULE(BToKMuMu);
