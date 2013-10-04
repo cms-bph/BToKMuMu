@@ -117,6 +117,7 @@ double, double);
   void saveBuToKMuMu(RefCountedKinematicTree);
   void saveBuVertex(RefCountedKinematicTree);
   void saveBuCosAlpha(RefCountedKinematicTree);
+  void saveBuLsig(RefCountedKinematicTree);
 
   // ----------member data ---------------------------
   // --- begin input from python file ---
@@ -702,7 +703,7 @@ bchg->push_back(iTrack->charge());
 saveBuToKMuMu(vertexFitTree);
 saveBuVertex(vertexFitTree);
 saveBuCosAlpha(vertexFitTree);
-
+saveBuLsig(vertexFitTree); 
       } // close track loop
     } // close mu+ loop
   } // close mu- loop
@@ -1172,6 +1173,26 @@ b_KV->error().matrix()(1,2) + beamSpot_.covariance()(1,2),
   bcosalphabs->push_back(cosAlphaBS);
   bcosalphabserr->push_back(cosAlphaBSErr);
   
+}
+
+void
+BToKMuMu::saveBuLsig(RefCountedKinematicTree vertexFitTree)
+{
+  vertexFitTree->movePointerToTheTop();
+  RefCountedKinematicVertex b_KV = vertexFitTree->currentDecayVertex();
+  double LSBS, LSBSErr;
+
+  calLS (b_KV->position().x(), b_KV->position().y(), 0.0,
+beamSpot_.position().x(), beamSpot_.position().y(), 0.0,
+b_KV->error().cxx(), b_KV->error().cyy(), 0.0,
+b_KV->error().matrix()(0,1), 0.0, 0.0,
+beamSpot_.covariance()(0,0), beamSpot_.covariance()(1,1), 0.0,
+beamSpot_.covariance()(0,1), 0.0, 0.0,
+&LSBS,&LSBSErr);
+ 
+  blsbs->push_back(LSBS);
+  blsbserr->push_back(LSBSErr);
+ 
 }
 
 
