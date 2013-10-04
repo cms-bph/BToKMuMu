@@ -47,6 +47,8 @@ Implementation:
 
 #include "RecoVertex/KinematicFitPrimitives/interface/KinematicParticleFactoryFromTransientTrack.h"
 #include "RecoVertex/KinematicFit/interface/KinematicParticleVertexFitter.h"
+#include "RecoVertex/VertexTools/interface/VertexDistance3D.h"
+
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 
 
@@ -94,7 +96,8 @@ double*, double*);
   void calLS (double, double, double, double, double, double, double,
 double, double, double, double, double, double, double,
 double, double, double, double, double*, double*);
-
+  void calCtau(RefCountedKinematicTree, double &, double &);
+  
   void clearVariables();
   bool hasBeamSpot(const edm::Event&);
   bool hasGoodBuMass(RefCountedKinematicTree, double &);
@@ -118,6 +121,7 @@ double, double);
   void saveBuVertex(RefCountedKinematicTree);
   void saveBuCosAlpha(RefCountedKinematicTree);
   void saveBuLsig(RefCountedKinematicTree);
+  void saveBuCtau(RefCountedKinematicTree);
 
   // ----------member data ---------------------------
   // --- begin input from python file ---
@@ -704,6 +708,7 @@ saveBuToKMuMu(vertexFitTree);
 saveBuVertex(vertexFitTree);
 saveBuCosAlpha(vertexFitTree);
 saveBuLsig(vertexFitTree); 
+saveBuCtau(vertexFitTree); 
       } // close track loop
     } // close mu+ loop
   } // close mu- loop
@@ -1194,6 +1199,58 @@ beamSpot_.covariance()(0,1), 0.0, 0.0,
   blsbserr->push_back(LSBSErr);
  
 }
+
+void
+BToKMuMu::calCtau(RefCountedKinematicTree vertexFitTree,
+double &bctau, double &bctauerr)
+{
+  //calculate ctau = (mB*(Bvtx-Pvtx)*pB)/(|pB|**2)
+
+  vertexFitTree->movePointerToTheTop();
+  RefCountedKinematicParticle b_KP = vertexFitTree->currentParticle();
+  RefCountedKinematicVertex b_KV = vertexFitTree->currentDecayVertex();
+
+  double betagamma = (b_KP->currentState().globalMomentum().mag()/BuMass_);
+
+  // calculate ctau error. Momentum error is negligible compared to
+  // the vertex errors, so don't worry about it
+
+  GlobalPoint BVP = GlobalPoint( b_KV->position() );
+  GlobalPoint PVP = GlobalPoint( primaryVertex_.position().x(),
+primaryVertex_.position().y(),
+primaryVertex_.position().z() );
+  GlobalVector sep3D = BVP-PVP;
+  GlobalVector pBV = b_KP->currentState().globalMomentum();	
+  bctau = (BuMass_* (sep3D.dot(pBV)))/(pBV.dot(pBV));
+  
+  GlobalError BVE = b_KV->error();
+  GlobalError PVE = GlobalError( primaryVertex_.error() );
+  VertexDistance3D theVertexDistance3D;
+  Measurement1D TheMeasurement = theVertexDistance3D.distance( VertexState(BVP, BVE),
+VertexState(PVP, PVE) );
+  double myError = TheMeasurement.error();	
+  
+  // ctau is defined by the portion of the flight distance along
+  // the compoenent of the B momementum, so only consider the error
+  // of that component, too, which is accomplished by scaling by
+  // ((VB-VP)(dot)PB)/|VB-VP|*|PB|
+  
+  double scale = abs( (sep3D.dot(pBV))/(sep3D.mag()*pBV.mag()) );
+  bctauerr = (myError*scale)/betagamma;
+
+}
+
+
+
+void
+BToKMuMu::saveBuCtau(RefCountedKinematicTree vertexFitTree)
+{
+  double bctau_temp, bctauerr_temp;
+  calCtau(vertexFitTree, bctau_temp, bctauerr_temp);
+  bctau->push_back(bctau_temp);
+  bctauerr->push_back(bctauerr_temp);
+}
+
 
 
 //define this as a plug-in
