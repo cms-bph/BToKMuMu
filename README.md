@@ -2,7 +2,9 @@
 # B To K Mu Mu Analysis 
 #------------------------
 
+##########
 ## Build 
+##########
 
 >  cd /path/to/your/destinaiton
 
@@ -12,7 +14,9 @@
 
 >  scram b 
 
+########
 ## Run 
+########
 
 >  cd python
 
