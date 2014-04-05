@@ -72,7 +72,7 @@ Implementation:
 using namespace std;
 
 //
-// Constans
+// Constants
 //
 
 const int MUONMINUS_PDG_ID = 13;
@@ -80,10 +80,10 @@ const int MUONMINUS_PDG_ID = 13;
 //const int KLONGZERO_PDG_ID = 130;
 //const int KSHORTZERO_PDG_ID = 310;
 //const int KZERO_PDG_ID = 311;
-const int KPLUS_PDG_ID = 323;
+const int KPLUS_PDG_ID = 321;
 const int BPLUS_PDG_ID = 521;
 const int JPSI_PDG_ID = 443;
-const int PSI2S_PDG_ID = 10443;
+const int PSI2S_PDG_ID = 100443;
 
 const int ETA_PDG_ID = 221;
 const int DZERO_PDG_ID = 421;
@@ -91,7 +91,7 @@ const int DSTAR2007_PDG_ID = 423;
 const int DSPLUS_PDG_ID = 431;
 const int DS1PLUS2460_PDG_ID = 20433;
 const int SIGMACSTARPLUSPLUS_PDG_ID = 4224;
-const int DELTAPLUS_PDG_ID = 2224;
+const int DELTAPLUS_PDG_ID = 2214;
 
 const double PI = 3.141592653589793;
 
@@ -105,6 +105,7 @@ struct HistArgs{
 };
 
 enum HistName{
+  h_events,      /* added */
   h_mupt,
   h_mueta,
   h_mumdcabs,
@@ -123,7 +124,7 @@ enum HistName{
   h_bvtxchisq,
   h_bvtxcl,
 
-  h_Kmass,
+  //h_Kmass,    
   h_bmass,
 
   kHistNameSize
@@ -134,6 +135,7 @@ enum HistName{
 HistArgs hist_args[kHistNameSize] = {
   // name, title, n_bins, x_min, x_max
 
+  {"h_events", "Processed Events", 1, 0, 1},      /* added */
   {"h_mupt", "Muon pT; [GeV]", 100, 0, 30},
   {"h_mueta", "Muon eta", 100, 0, 3},
   {"h_mumdcabs", "#mu^{-} DCA beam spot; DCA [cm]", 100, 0, 10},
@@ -153,7 +155,7 @@ HistArgs hist_args[kHistNameSize] = {
   {"h_bvtxchisq", "B decay vertex chisq", 100, 0, 1000},
   {"h_bvtxcl", "B decay vertex CL", 100, 0, 1},
 
-  {"h_Kmass", "K mass; M(K*) [GeV/^{2}]", 100, 0, 20},
+  //{"h_Kmass", "K mass; M(K*) [GeV/^{2}]", 100, 0, 20},    
 
   {"h_bmass", "B mass; M(B) [GeV]", 100, 0, 20},
 
@@ -198,6 +200,12 @@ private:
                         double VxzCov, double VyzCov, double WxErr2, double WyErr2,
                         double WzErr2, double WxyCov, double WxzCov, double WyzCov,
                         double* cosAlpha, double* cosAlphaErr);
+
+  void computeCosAlpha2D(double, double, double, double, double,              /* added */
+			 double, double, double, double, double,
+			 double, double, double, double,
+			 double, double, double, double,
+			 double*, double*);
   
   void computeCtau(RefCountedKinematicTree, double &, double &);
   double computeEta (double, double, double);
@@ -255,6 +263,7 @@ private:
   void saveBuToKMuMu(RefCountedKinematicTree);
   void saveBuVertex(RefCountedKinematicTree);
   void saveBuCosAlpha(RefCountedKinematicTree);
+  void saveBuCosAlpha2D(RefCountedKinematicTree);     /* added */  
   void saveBuLsig(RefCountedKinematicTree);
   void saveBuCtau(RefCountedKinematicTree);
 
@@ -376,7 +385,7 @@ private:
   vector<double> *bpx, *bpxerr, *bpy, *bpyerr, *bpz, *bpzerr, *bmass, *bmasserr;
   vector<double> *bvtxcl, *bvtxx, *bvtxxerr, *bvtxy, *bvtxyerr, *bvtxz, *bvtxzerr;
   vector<double> *bcosalphabs, *bcosalphabserr, *blsbs, *blsbserr, *bctau, *bctauerr;
-
+  vector<double> *bcosalphabs2D, *bcosalphabs2Derr;                                     /* added */
   
   // For MC
   int genbchg; // +1 for b+, -1 for b-
@@ -396,6 +405,10 @@ private:
 
   vector<bool> *istruemum, *istruemup, *istruetrk, *istruebu;
  // *istrueks, 
+
+  TDatime t_begin_ , t_now_ ;    /* added */
+  int n_processed_, n_selected_; 
+
   
 };
 
@@ -423,7 +436,7 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   BuMass_(iConfig.getUntrackedParameter<double>("BuMass")),
 
   // labels
-  //GenParticlesLabel_(iConfig.getParameter<edm::InputTag>("GenParticlesLabel")),
+  GenParticlesLabel_(iConfig.getParameter<edm::InputTag>("GenParticlesLabel")),
   TriggerResultsLabel_(iConfig.getParameter<edm::InputTag>("TriggerResultsLabel")),
   BeamSpotLabel_(iConfig.getParameter<edm::InputTag>("BeamSpotLabel")),
   VertexLabel_(iConfig.getParameter<edm::InputTag>("VertexLabel")),
@@ -492,7 +505,7 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   bmass(0), bmasserr(0),
   bvtxcl(0), bvtxx(0), bvtxxerr(0), bvtxy(0), bvtxyerr(0), bvtxz(0), bvtxzerr(0),
   bcosalphabs(0), bcosalphabserr(0), blsbs(0), blsbserr(0), bctau(0), bctauerr(0),
-
+  bcosalphabs2D(0), bcosalphabs2Derr(0),                                            /* added */
 
  
   genbchg(0),
@@ -536,6 +549,10 @@ BToKMuMu::~BToKMuMu()
 void
 BToKMuMu::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+
+  n_processed_ += 1;
+  histos[h_events]->Fill(0);
+
   clearVariables();
 
   run = iEvent.id().run() ;
@@ -555,7 +572,9 @@ BToKMuMu::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
        if (IsMonteCarlo_) saveTruthMatch(iEvent);
       
-      tree_->Fill();
+       tree_->Fill();
+       n_selected_ += 1;               /* added */
+
     }
   }
   
@@ -567,6 +586,15 @@ BToKMuMu::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 void
 BToKMuMu::beginJob()
 {
+
+  t_begin_.Set();
+  printf("\n ---------- Begin Job ---------- \n");            /* added */
+  t_begin_.Print();
+
+  n_processed_ = 0;
+  n_selected_ = 0;
+
+
   fout_ = new TFile(OutputFileName_.c_str(), "RECREATE");
   fout_->cd();
 
@@ -679,6 +707,8 @@ BToKMuMu::beginJob()
   tree_->Branch("bvtxzerr", &bvtxzerr);
   tree_->Branch("bcosalphabs", &bcosalphabs);
   tree_->Branch("bcosalphabserr", &bcosalphabserr);
+  tree_->Branch("bcosalphabs2D",  &bcosalphabs2D);              /* added */
+  tree_->Branch("bcosalphabs2Derr", &bcosalphabs2Derr);
   tree_->Branch("blsbs", &blsbs);
   tree_->Branch("blsbserr", &blsbserr);
   tree_->Branch("bctau", &bctau);
@@ -742,6 +772,17 @@ BToKMuMu::endJob()
     histos[i]->Delete();
   }
   fout_->Close();
+
+  t_now_.Set();
+  printf(" \n ---------- End Job ---------- \n" ) ;              /* added */
+  t_now_.Print();
+  printf(" processed: %i \n selected: %i \n \
+duration: %i sec \n rate: %g evts/sec\n",
+	 n_processed_, n_selected_,
+	 t_now_.Convert() - t_begin_.Convert(),
+	 float(n_processed_)/(t_now_.Convert()-t_begin_.Convert()) );
+
+
 }
 
 // method called when starting to processes a run ------------
@@ -830,6 +871,7 @@ BToKMuMu::clearVariables(){
   bvtxyerr->clear();
   bvtxz->clear(); bvtxzerr->clear(); bcosalphabs->clear(); bcosalphabserr->clear();
   blsbs->clear(); blsbserr->clear(); bctau->clear(); bctauerr->clear();
+  bcosalphabs2D->clear(); bcosalphabs2Derr->clear();                       /* added */
 
     if (IsMonteCarlo_) {
     genbchg = 0; genbpx = 0; genbpy = 0; genbpz = 0;
@@ -948,7 +990,7 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
   // init variables
   edm::Handle< vector<pat::Muon> > patMuonHandle;
   iEvent.getByLabel(MuonLabel_, patMuonHandle);
-  if( patMuonHandle->size() < 2 ) return;
+  if( patMuonHandle->size() < 2 ) return ;
 
   /*
   edm::Handle<reco::VertexCompositeCandidateCollection> theKshorts;
@@ -968,7 +1010,8 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
   double MuMuCosAlphaBS, MuMuCosAlphaBSErr;
   //double K_mass
   double kaon_trk_pt, b_vtx_chisq, b_vtx_cl, b_mass;
-  //double DCAKstTrkBS, DCAKstTrkBSErr;
+  //double DCAKstTrkBS, DCAKstTrkBSErr;               
+  double DCAKaonTrkBS, DCAKaonTrkBSErr;                      /* added */
   //vector<reco::TrackRef> kshortDaughterTracks;
   RefCountedKinematicTree vertexFitTree;
   //RefCountedKinematicTree ksVertexFitTree;
@@ -1053,7 +1096,7 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
 		*/
 
         // ---------------------------------
-        // loop 4: track
+        // loop 3: Kaon track
         // ---------------------------------
         for ( vector<pat::GenericParticle>::const_iterator iTrack
                 = thePATTrackHandle->begin();
@@ -1071,6 +1114,11 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
          histos[h_trkdcasigbs]->Fill(DCAKstTrkBS/DCAKstTrkBSErr);
          if (!passed) continue;
         */
+	 passed = hasGoodTrackDcaBs(theTrackTT, DCAKaonTrkBS, DCAKaonTrkBSErr);          /* added */
+	 histos[h_trkdcasigbs]->Fill(DCAKaonTrkBS/DCAKaonTrkBSErr);
+	 if (!passed) continue;
+
+
 
          passed = hasGoodBuVertex(muTrackm, muTrackp, 
                                  kaonTrack, b_vtx_chisq, b_vtx_cl,
@@ -1100,8 +1148,8 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
       //   saveKshortVariables(ksVertexFitTree, *iKshort);
 
          trkpt->push_back(kaon_trk_pt);
-   //      trkdcabs->push_back(DCAKstTrkBS);
-     //    trkdcabserr->push_back(DCAKstTrkBSErr);
+         trkdcabs->push_back(DCAKaonTrkBS);
+         trkdcabserr->push_back(DCAKaonTrkBSErr);
     //     Kmass->push_back(K_mass);
          bchg->push_back(iTrack->charge());
          bvtxcl->push_back(b_vtx_cl);
@@ -1110,16 +1158,18 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
          saveBuToKMuMu(vertexFitTree);
          saveBuVertex(vertexFitTree);
          saveBuCosAlpha(vertexFitTree);
+	 saveBuCosAlpha2D(vertexFitTree);        /* added */
          saveBuLsig(vertexFitTree);
          saveBuCtau(vertexFitTree);
 
-        } // close track loop
+        } // close kaon track loop
   //    } // close kshort loop
     } // close mu+ loop
   } // close mu- loop
 
-  if ( nb > 0) edm::LogInfo("myBu") << "Found " << nb << " Bu -> K+ mu mu.";
-    
+  if ( nb > 0) 
+    edm::LogInfo("myBu") << "Found " << nb << " Bu -> K+ mu mu.";    
+
 }
 
 
@@ -1189,6 +1239,48 @@ BToKMuMu::computeCosAlpha (double Vx, double Vy, double Vz,
   } else {
     *cosAlpha = 0.;
     *cosAlphaErr = 0.;
+  }
+}
+
+void
+BToKMuMu::computeCosAlpha2D (double Vx, double Vy, double Vz,                  /* added */
+			     double Wx, double Wy, double Wz,
+			     double VxErr2, double VyErr2, double VzErr2,
+			     double VxyCov, double VxzCov, double VyzCov,
+			     double WxErr2, double WyErr2, double WzErr2,
+			     double WxyCov, double WxzCov, double WyzCov,
+         		     double* cosAlpha2D, double* cosAlpha2DErr)
+
+{
+  double Vnorm = sqrt(Vx*Vx + Vy*Vy + Vz*Vz);
+  double Wnorm = sqrt(Wx*Wx + Wy*Wy + Wz*Wz);
+  double VdotW = Vx*Wx + Vy*Wy + Vz*Wz;
+
+  if ((Vnorm > 0.) && (Wnorm > 0.)) {
+    *cosAlpha2D = VdotW / (Vnorm * Wnorm);
+
+    *cosAlpha2DErr = sqrt( (
+			    (Vx*Wnorm - VdotW*Wx) * (Vx*Wnorm - VdotW*Wx) * WxErr2 +
+			    (Vy*Wnorm - VdotW*Wy) * (Vy*Wnorm - VdotW*Wy) * WyErr2 +
+			    (Vz*Wnorm - VdotW*Wz) * (Vz*Wnorm - VdotW*Wz) * WzErr2 +
+
+
+			    (Vx*Wnorm - VdotW*Wx) * (Vy*Wnorm - VdotW*Wy) * 2.*WxyCov +
+			    (Vx*Wnorm - VdotW*Wx) * (Vz*Wnorm - VdotW*Wz) * 2.*WxzCov +
+			    (Vy*Wnorm - VdotW*Wy) * (Vz*Wnorm - VdotW*Wz) * 2.*WyzCov) /
+        		   (Wnorm*Wnorm*Wnorm*Wnorm) +
+
+			   ((Wx*Vnorm - VdotW*Vx) * (Wx*Vnorm - VdotW*Vx) * VxErr2 +
+			    (Wy*Vnorm - VdotW*Vy) * (Wy*Vnorm - VdotW*Vy) * VyErr2 +
+			    (Wz*Vnorm - VdotW*Vz) * (Wz*Vnorm - VdotW*Vz) * VzErr2 +
+
+ 			    (Wx*Vnorm - VdotW*Vx) * (Wy*Vnorm - VdotW*Vy) * 2.*VxyCov +
+			    (Wx*Vnorm - VdotW*Vx) * (Wz*Vnorm - VdotW*Vz) * 2.*VxzCov +
+			    (Wy*Vnorm - VdotW*Vy) * (Wz*Vnorm - VdotW*Vz) * 2.*VyzCov) /
+			   (Vnorm*Vnorm*Vnorm*Vnorm) ) / (Wnorm*Vnorm);
+  } else {
+    *cosAlpha2D = 0.;
+    *cosAlpha2DErr = 0.;
   }
 }
 
@@ -1686,6 +1778,32 @@ BToKMuMu::saveBuCosAlpha(RefCountedKinematicTree vertexFitTree)
 }
 
 
+void
+BToKMuMu::saveBuCosAlpha2D(RefCountedKinematicTree vertexFitTree)                    /* added */
+{
+                                                                             
+  vertexFitTree->movePointerToTheTop();
+  RefCountedKinematicParticle b_KP = vertexFitTree->currentParticle();
+  RefCountedKinematicVertex b_KV = vertexFitTree->currentDecayVertex();
+
+  double cosAlphaBS2D, cosAlphaBS2DErr;
+  computeCosAlpha2D(b_KP->currentState().globalMomentum().x(),
+		    b_KP->currentState().globalMomentum().y(),0.0,
+		    b_KV->position().x() - beamSpot_.position().x(),
+		    b_KV->position().y() - beamSpot_.position().y(),0.0,
+		    b_KP->currentState().kinematicParametersError().matrix()(3,3),
+		    b_KP->currentState().kinematicParametersError().matrix()(4,4),0.0,
+		    b_KP->currentState().kinematicParametersError().matrix()(3,4),0.0,0.0,
+		    b_KV->error().cxx() + beamSpot_.covariance()(0,0),
+		    b_KV->error().cyy() + beamSpot_.covariance()(1,1),0.0,
+		    b_KV->error().matrix()(0,1) + beamSpot_.covariance()(0,1),0.0,0.0,
+		    &cosAlphaBS2D,&cosAlphaBS2DErr);
+
+  bcosalphabs2D->push_back(cosAlphaBS2D);
+  bcosalphabs2Derr->push_back(cosAlphaBS2DErr);
+
+}
+
 
 bool
 BToKMuMu::matchPrimaryVertexTracks ()
@@ -1865,21 +1983,21 @@ BToKMuMu::saveGenInfo(const edm::Event& iEvent){
     //const reco::Candidate & pip = *(ks->daughter(ipip));
     //const reco::Candidate & pim = *(ks->daughter(ipim));
     //const reco::Candidate & kp = *(kst.daughter(ikp));
-	const reco::Candidate & kp = *(b.daughter(ikp));
+    const reco::Candidate & kp = *(b.daughter(ikp));
     const reco::Candidate *mum = NULL;
     const reco::Candidate *mup = NULL;
     
-    // K* mu mu
+    // K+ mu mu
     if (imum != -1 && imup != -1) {
-      // cout << "Found GEN B+-> K* mu mu " << endl;
+      // cout << "Found GEN B+-> K+ mu mu " << endl;
       mum = b.daughter(imum);
       mup = b.daughter(imup);
       decname = "BuToKMuMu";
     }
 
-    // K* J/psi
+    // K+ J/psi
     else if ( ijpsi != -1 ) {
-      // cout << "Found GEN B+-> K* J/psi " << endl;
+      // cout << "Found GEN B+-> K+ J/psi " << endl;
       const reco::Candidate & jpsi = *(b.daughter(ijpsi));
       for ( size_t j = 0; j < jpsi.numberOfDaughters(); ++j){
         const reco::Candidate &dau = *(jpsi.daughter(j));
@@ -1893,9 +2011,9 @@ BToKMuMu::saveGenInfo(const edm::Event& iEvent){
       }
     }
 
-    // K* psi(2S)
+    // K+ psi(2S)
     else if ( ipsi2s != -1) {
-      // cout << "Found GEN B+-> K* psi(2S) " << endl;
+      // cout << "Found GEN B+-> K+ psi(2S) " << endl;
       const reco::Candidate & psi2s = *(b.daughter(ipsi2s));
       for ( size_t j = 0; j < psi2s.numberOfDaughters(); ++j){
         const reco::Candidate &dau = *(psi2s.daughter(j));
@@ -2213,7 +2331,7 @@ BToKMuMu::saveTruthMatch(const edm::Event& iEvent){
       istrueks->push_back(false);
     }
     */
-    // truth match with pion track
+    // truth match with Kaon track
     deltaEtaPhi = computeEtaPhiDistance(gentrkpx, gentrkpy, gentrkpz,
                                         trkpx->at(i), trkpy->at(i), trkpz->at(i));
     if (deltaEtaPhi < TruthMatchKaonMaxR_){
