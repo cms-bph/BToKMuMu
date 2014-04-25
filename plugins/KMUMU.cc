@@ -16,12 +16,12 @@
 #include <TLorentzVector.h>
 //
 // Global Constants
-const double KSTAR_MASS = 0.89166; // GeV
-const double KSTAR_WIDTH = 0.0508; // GeV
+//const double KSTAR_MASS = 0.89166; // GeV
+//const double KSTAR_WIDTH = 0.0508; // GeV
 const double MUON_MASS = 0.10565837;
 const double KAON_MASS = 0.493677;
-const double PION_MASS = 0.13957018;
-const double KSHORT_MASS = 0.497614;
+//const double PION_MASS = 0.13957018;
+//const double KSHORT_MASS = 0.497614;
 
 // user defined variables
 TDatime t_begin_ , t_now_ ;
@@ -426,21 +426,21 @@ int KMUMU::SelectB(string cut)
 //
 bool KMUMU::HasGoodDimuon(int i)
 {//{{{
-  if ( // soft muon
+  if ( // New soft muon id
       mumisgoodmuon->at(i)
       && mupisgoodmuon->at(i)
       && mumntrklayers->at(i) > 5 // 2012 Data
       && mupntrklayers->at(i) > 5 // 2012 Data
       // && mumntrkhits->at(i) > 10
       // && mupntrkhits->at(i) > 10
-      && mumnpixlayers->at(i) > 1
-      && mupnpixlayers->at(i) > 1
+      && mumnpixlayers->at(i) > 0      // 1,0 (old,new)
+      && mupnpixlayers->at(i) > 0      // 1,0 (old,new)
       && mumnormchi2->at(i) < 1.8
       && mupnormchi2->at(i) < 1.8
-      && fabs(mumdxyvtx->at(i)) < 3
-      && fabs(mupdxyvtx->at(i)) < 3
-      && fabs(mumdzvtx->at(i)) < 30
-      && fabs(mupdzvtx->at(i)) < 30
+      && fabs(mumdxyvtx->at(i)) < 0.3  // 3,0.3 (old,new)
+      && fabs(mupdxyvtx->at(i)) < 0.3  // 3,0.3 (old,new)
+      && fabs(mumdzvtx->at(i)) < 20    // 30,20 (old,new)
+      && fabs(mupdzvtx->at(i)) < 20    // 30,20 (old,new)
       ) return true;
   return false;
 }//}}}
