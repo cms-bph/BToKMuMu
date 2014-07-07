@@ -11,7 +11,7 @@ process.source = cms.Source("PoolSource",
                             
     )
 
-process.GlobalTag.globaltag = cms.string('FT53_V21A_AN6::All')
+process.GlobalTag.globaltag = cms.string('START53_v7G::All')
 
 
 # do trigger matching for muons
