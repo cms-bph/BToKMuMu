@@ -21,7 +21,8 @@ process.source = cms.Source("PoolSource",
                             )
                         )
 #process.GlobalTag.globaltag = cms.string('GR_R_42_V25::All')r
-process.GlobalTag.globaltag = cms.string('START53_V23::All')
+#process.GlobalTag.globaltag = cms.string('START53_V23::All')
+process.GlobalTag.globaltag = cms.string('START53_V7G::All')
 
 # do trigger matching for muons
 triggerProcessName = 'HLT'
