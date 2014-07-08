@@ -8,10 +8,11 @@ process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
                                'file:/afs/cern.ch/work/n/nsahoo/BPH-ANALYSIS/afb/SE/aod/data/2012_test_data_Run2012B_Jan2013_1000.root' )
 #                                'file:/afs/cern.ch/work/n/nsahoo/BPH-ANALYSIS/afb/SE/aod/data/2012_test_data_Run2012B_15000.root')
+#                                '/store/data/Run2012A/DoubleMuParked/AOD/22Jan2013-v1/20000/00A96C5F-0ED4-E211-A18C-485B39800C15.root')   
                             
     )
 
-process.GlobalTag.globaltag = cms.string('START53_V7G::All')
+process.GlobalTag.globaltag = cms.string('FT53_V21A_AN6::All')
 
 
 # do trigger matching for muons
