@@ -1,0 +1,11 @@
+***************************
+  8TeV signal MC sample
+***************************
+nreco       =  451966
+xsec-pythia =  49.59E9 pb
+filt. eff   = 1.8E-4
+BF_BToKMuMu = 4.8E-7
+
+lumi_mc     = nreco/(xsec-pythia * BF_BToKMuMu * filt. eff )
+            = 105.48 /fb
+            ~ 105.5  /fb
