@@ -103,7 +103,8 @@ public :
    vector<double> *blsbserr;
    vector<double> *bctau;
    vector<double> *bctauerr; 
-   Int_t genbchg;
+   
+	Int_t genbchg;
    Double_t genbpx;
    Double_t genbpy;
    Double_t genbpz;

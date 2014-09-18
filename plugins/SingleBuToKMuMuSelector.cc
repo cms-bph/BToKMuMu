@@ -29,7 +29,7 @@ TTree *tree_;
 int     Nb             = 0;
 double  Mumumass       = 0;
 double  Mumumasserr    = 0;
-//double  Kmass          = 0;
+double  Kmass          = 0;
 double  Trkpt          = 0;
 double  Trkdcasigbs    = 0;  // 2014-08-07 N.A.
 
@@ -74,6 +74,7 @@ void ClearEvent() {
 	Nb                  = 0;
 	Mumumass            = 0;
 	Mumumasserr         = 0;
+	Kmass               = 0;
 	Trkpt               = 0;
 	Trkdcasigbs         = 0;   // 2014-08-07 N.A.
 	Bmass               = 0;
@@ -155,7 +156,8 @@ void SingleBuToKMuMuSelector::SlaveBegin(TTree * /*tree*/) {
 	string option = GetOption();
 	tree_ = new TTree("tree", "tree");
 	tree_->Branch("Mumumass",        &Mumumass,         "Mumumass/D");
-//	tree_->Branch("Kmass",           &Kmass,            "Kmass/D");
+	tree_->Branch("Mumumasserr",     &Mumumasserr,      "Mumumasserr/D");
+	tree_->Branch("Kmass",           &Kmass,            "Kmass/D");
 	tree_->Branch("Trkpt",           &Trkpt,            "Trkpt/D");
 	tree_->Branch("Trkdcasigbs",     &Trkdcasigbs,      "Trkdcasigbs/D"); // 2014-08-07 N.A.
 	
@@ -180,6 +182,7 @@ void SingleBuToKMuMuSelector::SlaveBegin(TTree * /*tree*/) {
 	std::map<string,int> maptype;
 	maptype.insert(std::pair<string,int>("data",1));
 	maptype.insert(std::pair<string,int>("mc.lite",2));
+	maptype.insert(std::pair<string,int>("mc.AOD",2));
 	maptype.insert(std::pair<string,int>("mc.hlt",998));
 	maptype.insert(std::pair<string,int>("mc",999));
 	switch (maptype[datatype]) {
@@ -257,17 +260,17 @@ Bool_t SingleBuToKMuMuSelector::Process(Long64_t entry) {
 	n_processed_ += 1;
 	Nb = nb;
 	
-//	if (datatype != "data") SaveGen();  ///// 13-08-2014
+//	if (datatype != "data") SaveGen();  ///// 13-08-2014 /////////////////////// for MC ////////////////////////////////////////////////
 	
 	int i = SelectB(cut);
-//	if ( i != -1 && ( datatype == "data" || datatype == "mc" || ( datatype == *decname && istruebu->at(i) )))
-	if ( i != -1 ) {
-//		printf("Entry#%lld, candidate#%d is seleted.\n",entry,i); //2014-05-22 N.A.
+	if ( i != -1 && ( datatype == "data" || istruebu->at(i) )) {
+//	if (i != -1 && nb != 0) {
 		n_selected_ += 1;
 		SaveEvent(i);
-		if ( datatype != "data" ) SaveGen();
-		tree_->Fill();
+	//	if ( datatype != "data" ) SaveGen();
+		tree_->Fill();  ///////////////////////////////////////////////////////// for data
 	}
+//	tree_->Fill();  //////////////////////////////////////////////////////////// for MC
 	return kTRUE;
 }
 
@@ -296,15 +299,28 @@ int SingleBuToKMuMuSelector::SelectB(string cut) {
 	int best_idx = -1;
 	double best_bvtxcl = 0.0;
 	
-	if (cut == "cut0") {
+	if (cut == "genonly") {
+		best_idx = -1;
+	}else if (cut == "nocut") {
+		for (int i = 0; i < nb; i++) {
+			if (bvtxcl->at(i) > best_bvtxcl) {
+				best_bvtxcl = bvtxcl->at(i);
+				best_idx = i;
+			}
+		}
+	//	if (nb == 0) best_idx = 0;
+	//	for (int i = 0; i < nb; i++) {
+	//		best_idx = i;
+	//	}
+	}else if (cut == "cut0") {
 		for (int i = 0; i < nb; i++) {
 			if ( ! HasGoodMuons(i) ) continue;
 			if ( ! TriggerSelections(i) ) continue;
 //			if ( ! KpSelections(i) ) continue; // 2014-05-22 N.A.
-				if (bvtxcl->at(i) > best_bvtxcl) {
-					best_bvtxcl = bvtxcl->at(i);
-					best_idx = i;
-				}
+			if (bvtxcl->at(i) > best_bvtxcl) {
+				best_bvtxcl = bvtxcl->at(i);
+				best_idx = i;
+			}
 		}
 	}else if (cut == "cut1") {
 		for (int i = 0; i< nb; i++) {
@@ -353,13 +369,16 @@ bool SingleBuToKMuMuSelector::TriggerSelections(int i){
 }
 bool SingleBuToKMuMuSelector::OptimizedSelections(int i) {
 	if ( // Optimized Selections after cut0
-		   trkpt->at(i) > 2.3
-		&& (  mumumass->at(i) < 2.923416 || ( mumumass->at(i) > 3.201016 && mumumass->at(i) < 3.570009 )  || mumumass->at(i) > 3.802209 ) // J/PSi && PSi(2S) cut
+		   trkpt->at(i) > 2.7
 		&& bvtxcl->at(i) > 0.12
-		&& ( blsbs->at(i) / blsbserr->at(i) ) > 10.2
+		&& ( blsbs->at(i) / blsbserr->at(i) ) > 9.4
 		&& bcosalphabs2D->at(i) > 0.9996
-		&& fabs( bmass->at(i) - mumumass->at(i) - 2.182 ) > 0.14 // CDF cut for JPSi
-		&& fabs( bmass->at(i) - mumumass->at(i) - 1.593 ) > 0.09 // CDF cut for PSi(2S)
+		&& bmass->at(i) > 5.0 && bmass->at(i) < 5.56
+	// 22-08-2014 N.A.
+	//	&& (  mumumass->at(i) < 2.923416 || ( mumumass->at(i) > 3.201016 && mumumass->at(i) < 3.570009 )  || mumumass->at(i) > 3.802209 ) // J/PSi && PSi(2S) cut
+	//	&& fabs(bmass->at(i) - 5.279) < 0.060  /////////////////////////////////////////////////////////////////////////////
+		&& fabs( bmass->at(i) - mumumass->at(i) - 2.182 ) > 0.12 // CDF cut for JPSi
+		&& fabs( bmass->at(i) - mumumass->at(i) - 1.593 ) > 0.08 // CDF cut for PSi(2S)
 		) return true;
 	return false;
 }
@@ -393,7 +412,7 @@ void SingleBuToKMuMuSelector::SaveEvent(int i)
 	Bphi = B_4vec.Phi(); // 2014-05-22 N.A.
 	Mumumass = buff2.M();
 	Mumumasserr = mumumasserr->at(i); // 2014-05-22 N.A.
-//	Kmass = Kmass->at(i);
+	Kmass = Tk_4vec.M();
 	Trkpt = Tk_4vec.Pt();
 	Trkdcasigbs = fabs( trkdcabs->at(i)/trkdcabserr->at(i) ); // 2014-05-22 N.A.
 	Q2 = pow(buff2.M(),2);
@@ -462,9 +481,9 @@ bool option_exists(char** begin, char** end, const std::string& option) {
 }
 
 void print_usage() {
-	cerr << "Usage: SingleBuToKMuMuSelector infile outfile [-n] [-s] [-j] [-h]\n"
-	     << " datatype: data, mc, mc.lite, mc.hlt\n"  // 2014-05-23 N.A.
-		  << " cut : cut0, cut1.\n"  // 2014-05-23 N.A.
+	cerr << "Usage: SingleBuToKMuMuSelector datatype cut infile outfile [-n] [-s] [-j] [-h]\n"
+	     << " datatype: data, mc, mc.AOD, mc.lite, mc.hlt\n"  // 2014-05-23 N.A.
+		  << " cut : genonly, nocut, cut0, cut1.\n"  // 2014-05-23 N.A.
 		  << "Options: \n"
 		  << " -h \t\tPrint this info\n"
 		  << " -n \t\tNumber of entries\n"
@@ -483,47 +502,10 @@ int main(int argc, char** argv) {
 	TString infile = argv[3];
 	TString outfile = argv[4];
 	
-	Printf("datatype: '%s'", datatype.Data());
-	Printf("cut: '%s'", cut.Data());
-	Printf("input file: '%s'", infile.Data());
+	Printf("   datatype: '%s'", datatype.Data());
+	Printf("        cut: '%s'", cut.Data());
+	Printf(" input file: '%s'", infile.Data());
 	Printf("output file: '%s'", outfile.Data());
-/////////////////////////////////////////////////////////
-/*
-// 2014-05-23 N.A.
-  TChain *ch = new TChain("tree");
-  ch->Add(infile.Data());
-  
-  char *j = get_option(argv, argv+argc, "-j");
-  if (j) {
-	  TProof::Open(Form("workers=%s", j));
-	  ch->SetProof();
-  }
-
-  Long64_t nentries = 1000000000;
-  char * n = get_option(argv, argv+argc, "-n");
-  if (n) nentries = atoi(n);
-  
-  int iStart = 0;
-  char *s = get_option(argv, argv+argc, "-s");
-  if (s) {
-	  iStart = atoi(s);
-	  if (iStart > ch->GetEntries()){
-		  printf("ERROR: Number of entries is %lld.\n",ch->GetEntries());
-		  return -1;
-	  }
-  }
-
-  TString option;
-  option.Form("datatype=%s;cut=%s;outfile=%s", datatype.Data(), cut.Data(), outfile.Data());
-//  option.Form("datatype=%s;cut=%s;ofile=%s_s%d.root", datatype.Data(), cut.Data(), outfile.Data(), iStart);
-
-  // It's not allowed to run with fat trees!
-  if (datatype.Data() == "mc" && (!(s) || !(n))){
-	  printf("WARNING: You must specify #entries(-n) and start run(-s) for datatype '%s'.\n",datatype.Data());
-	  return -1;
-	  }
-*/
-////////////////////////////////////////////////////////////////////
    
 	TString option;
 	option.Form("datatype=%s;cut=%s;outfile=%s", datatype.Data(), cut.Data(), outfile.Data());
