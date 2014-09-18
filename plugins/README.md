@@ -8,12 +8,15 @@ lxplus6 environment:
 	source /afs/cern.ch/sw/lcg/app/releases/ROOT/${version}/x86_64-slc6-gcc47-opt/root/bin/thisroot.sh
 
 Build:
+	
 	make
 
 Run Selection:
+	
 	./sel <datatype> <cut> <input.root> <output.root>
 
 Run Fitter:
+	
 	mkdir plots/
 	mkdir RootFiles/
 	mkdir fitParameters/
