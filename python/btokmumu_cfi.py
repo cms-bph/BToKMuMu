@@ -52,7 +52,7 @@ process.ntuple = cms.EDAnalyzer(
 
     # particle properties 
     MuonMass = cms.untracked.double(0.10565837), 
-    MuonMassErr = cms.untracked.double(0.10565837*1e-6), 
+    MuonMassErr = cms.untracked.double(3.5*1e-9), 
     KaonMass = cms.untracked.double(0.493677), 
     KaonMassErr = cms.untracked.double(1.6e-5),
     BuMass = cms.untracked.double(5.27925),
@@ -82,7 +82,7 @@ process.ntuple = cms.EDAnalyzer(
 
     # pre-selection cuts 
     TrkMinPt = cms.untracked.double(0.6), #[GeV/c]
-    TrkMaxDcaSigBs = cms.untracked.double(1.2), # hadron DCA/sigma w/respect to BS 
+    TrkMinDcaSigBs = cms.untracked.double(1.2), # hadron DCA/sigma w/respect to BS 
     TrkMaxR = cms.untracked.double(110.0), # [cm]
     TrkMaxZ = cms.untracked.double(280.0), # [cm]
    

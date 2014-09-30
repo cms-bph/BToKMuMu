@@ -312,7 +312,7 @@ private:
   double MuonMaxEta_;
   double MuonMaxDcaBs_;
   double TrkMinPt_;
-  double TrkMaxDcaSigBs_;
+  double TrkMinDcaSigBs_;
   double TrkMaxR_;
   double TrkMaxZ_;
   double MuMuMaxDca_;
@@ -457,7 +457,7 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   MuonMaxDcaBs_(iConfig.getUntrackedParameter<double>("MuonMaxDcaBs")),
 
   TrkMinPt_(iConfig.getUntrackedParameter<double>("TrkMinPt")),
-  TrkMaxDcaSigBs_(iConfig.getUntrackedParameter<double>("TrkMaxDcaSigBs")),
+  TrkMinDcaSigBs_(iConfig.getUntrackedParameter<double>("TrkMinDcaSigBs")),
   TrkMaxR_(iConfig.getUntrackedParameter<double>("TrkMaxR")),
   TrkMaxZ_(iConfig.getUntrackedParameter<double>("TrkMaxZ")),
 
@@ -1324,7 +1324,7 @@ BToKMuMu::hasGoodTrackDcaBs (const reco::TransientTrack TrackTT,
   
   DcaBs = theDCAXBS.perigeeParameters().transverseImpactParameter();
   DcaBsErr = theDCAXBS.perigeeError().transverseImpactParameterError();
-  if ( fabs(DcaBs/DcaBsErr) > TrkMaxDcaSigBs_ ) return false;
+  if ( fabs(DcaBs/DcaBsErr) < TrkMinDcaSigBs_ ) return false;
   return true;
 }
 
