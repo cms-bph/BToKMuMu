@@ -1,13 +1,13 @@
 import FWCore.ParameterSet.Config as cms
 from btokmumu_2012_cfi import process 
 
-
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
-'root://xrootd.unl.edu//store/data/Run2012A/DoubleMuParked/AOD/22Jan2013-v1/20000/002557DC-16D4-E211-9415-20CF3027A5AB.root',
+#'root://xrootd.unl.edu//store/data/Run2012A/DoubleMuParked/AOD/22Jan2013-v1/20000/002557DC-16D4-E211-9415-20CF3027A5AB.root',
+'root://xrootd.unl.edu//store/data/Run2012B/MuOniaParked/AOD/22Jan2013-v1/20000/00054BD0-5668-E211-8091-00215E21DC7E.root',
 #'file:/afs/cern.ch/work/n/nsahoo/BPH-ANALYSIS/afb/SE/aod/data/2012_test_data_Run2012B_Jan2013_1000.root', 
 #'file:/afs/cern.ch/work/n/nsahoo/BPH-ANALYSIS/afb/SE/aod/data/2012_test_data_Run2012B_15000.root'
 #'/store/data/Run2012A/DoubleMuParked/AOD/22Jan2013-v1/20000/00A96C5F-0ED4-E211-A18C-485B39800C15.root'
@@ -52,4 +52,4 @@ g_LastFilterNames = [i[1] for i in g_TriggerNames_LastFilterNames]
 
 process.ntuple.TriggerNames = cms.vstring(g_TriggerNames)
 process.ntuple.LastFilterNames = cms.vstring(g_LastFilterNames)
-
+process.ntuple.KeepGENOnly  = cms.untracked.bool(False)
