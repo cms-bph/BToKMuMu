@@ -2,8 +2,8 @@ import FWCore.ParameterSet.Config as cms
 from btokmumu_2012_cfi import process
 
 
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
@@ -18,7 +18,8 @@ process.source = cms.Source("PoolSource",
 #  'file:/afs/cern.ch/work/n/nsahoo/BPH-ANALYSIS/afb/SE/aod/mc/2012_test_BToKMuMu_500.root',
 #  'file:/afs/cern.ch/work/n/nsahoo/BPH-ANALYSIS/afb/SE/aod/mc/2012_test_BToKMuMu_1000.root',
 #'root://xrootd.unl.edu//store/mc/Summer12_DR53X/Bu2MuMuK_TuneZ2star_8TeV_Pythia6/AODSIM/PU_RD2_START53_V19F-v1/00000/000771A0-9408-E411-94C0-002590DB92A8.root',
-'root://xrootd.unl.edu//store/mc/Summer12_DR53X/BuToPsiK_KFilter_TuneZ2star_SVS_8TeV-pythia6-evtgen/AODSIM/PU_RD2_START53_V19F-v1/00000/001E2794-0711-E411-B5F0-02163E008EBC.root',
+'root://xrootd.unl.edu//store/mc/Summer12_DR53X/BuJpsiK_TuneZ2star_8TeV_Pythia6/AODSIM/PU_RD2_START53_V19F-v1/00000/00086026-C705-E411-B655-90E6BAE8CC0C.root',
+#'root://xrootd.unl.edu//store/mc/Summer12_DR53X/BuToPsiK_KFilter_TuneZ2star_SVS_8TeV-pythia6-evtgen/AODSIM/PU_RD2_START53_V19F-v1/00000/001E2794-0711-E411-B5F0-02163E008EBC.root',
 #    '/store/mc/Summer12_DR53X/BuToMuMuK_EtaPtFilter_8TeV-pythia6-evtgen/AODSIM/PU_S10_START53_V7C-v1/20000/9C4AFE3E-BA65-E211-821F-AC162DACC3E8.root',
     
                             )
