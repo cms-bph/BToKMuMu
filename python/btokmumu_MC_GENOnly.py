@@ -1,5 +1,5 @@
 import FWCore.ParameterSet.Config as cms
-from btokmumu_2012_cfi_GENOnly import process
+from btokmumu_2012_cfi import process
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
