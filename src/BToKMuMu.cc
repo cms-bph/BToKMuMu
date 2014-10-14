@@ -124,7 +124,6 @@ enum HistName{
   h_bvtxchisq,
   h_bvtxcl,
 
-  //h_Kmass,    
   h_bmass,
 
   kHistNameSize
@@ -154,8 +153,6 @@ HistArgs hist_args[kHistNameSize] = {
   {"h_trkdcabssig", "Kaon track DCA/#sigma beam spot; DCA/#sigma", 100, 0, 10},
   {"h_bvtxchisq", "B decay vertex chisq", 100, 0, 1000},
   {"h_bvtxcl", "B decay vertex CL", 100, 0, 1},
-
-  //{"h_Kmass", "K mass; M(K*) [GeV/^{2}]", 100, 0, 20},    
 
   {"h_bmass", "B mass; M(B) [GeV]", 100, 0, 20},
 
@@ -191,15 +188,15 @@ private:
   void buildBuToKMuMu(const edm::Event &);
 
   void computeLS (double, double, double, double, double, double, double,
-                 double, double, double, double, double, double, double,
-                 double, double, double, double, double* deltaD, double* deltaDErr);
+                  double, double, double, double, double, double, double,
+                  double, double, double, double, double*, double*);
 
-  void computeCosAlpha (double Vx, double Vy, double Vz, double Wx, double Wy,
-                        double Wz,
-                        double VxErr2, double VyErr2, double VzErr2, double VxyCov,
-                        double VxzCov, double VyzCov, double WxErr2, double WyErr2,
-                        double WzErr2, double WxyCov, double WxzCov, double WyzCov,
-                        double* cosAlpha, double* cosAlphaErr);
+  void computeCosAlpha (double, double, double, double, double,
+                        double,
+                        double, double, double, double,
+                        double, double, double, double,
+                        double, double, double, double,
+                        double*, double*);
 
   void computeCosAlpha2D(double, double, double, double, double,              /* added */
 			 double, double, double, double, double,
@@ -210,7 +207,7 @@ private:
   void computeCtau(RefCountedKinematicTree, double &, double &);
   double computeEta (double, double, double);
   double computePhi (double, double, double);
-  double computeEtaPhiDistance (double, double, double,        double, double, double);
+  double computeEtaPhiDistance (double, double, double, double, double, double);
   void clearVariables();
 
   bool hasBeamSpot(const edm::Event&);
@@ -315,7 +312,7 @@ private:
   double MuonMaxEta_;
   double MuonMaxDcaBs_;
   double TrkMinPt_;
-  double TrkMaxDcaSigBs_;
+  double TrkMinDcaSigBs_;
   double TrkMaxR_;
   double TrkMaxZ_;
   double MuMuMaxDca_;
@@ -460,7 +457,7 @@ BToKMuMu::BToKMuMu(const edm::ParameterSet& iConfig):
   MuonMaxDcaBs_(iConfig.getUntrackedParameter<double>("MuonMaxDcaBs")),
 
   TrkMinPt_(iConfig.getUntrackedParameter<double>("TrkMinPt")),
-  TrkMaxDcaSigBs_(iConfig.getUntrackedParameter<double>("TrkMaxDcaSigBs")),
+  TrkMinDcaSigBs_(iConfig.getUntrackedParameter<double>("TrkMinDcaSigBs")),
   TrkMaxR_(iConfig.getUntrackedParameter<double>("TrkMaxR")),
   TrkMaxZ_(iConfig.getUntrackedParameter<double>("TrkMaxZ")),
 
@@ -569,12 +566,12 @@ BToKMuMu::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if ( bFieldHandle_.isValid() && hasPrimaryVertex(iEvent) ) {
       
       buildBuToKMuMu(iEvent) ;
-
-       if (IsMonteCarlo_) saveTruthMatch(iEvent);
+      
+      if (IsMonteCarlo_) saveTruthMatch(iEvent);
       
        tree_->Fill();
        n_selected_ += 1;               /* added */
-
+      
     }
   }
   
@@ -1057,12 +1054,22 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
       if ( ! passed ) continue;
       
       // check goodness of muons closest approach and the 3D-DCA
-      passed = hasGoodClosestApproachTracks(muTrackpTT, muTrackmTT,
+      /* passed = hasGoodClosestApproachTracks(muTrackpTT, muTrackmTT,
                                          mumutrk_R, mumutrk_Z, DCAmumu);
+      */
+      if (! hasGoodClosestApproachTracks(muTrackpTT, muTrackmTT, mumutrk_R, mumutrk_Z, DCAmumu ) )  continue;   /* added */
+
       histos[h_mumutrkr]->Fill(mumutrk_R);
       histos[h_mumutrkz]->Fill(mumutrk_Z);
       histos[h_mumudca]->Fill(DCAmumu);
+
+      /*
       if ( !passed ) continue;
+      */
+
+      if ( mumutrk_R > TrkMaxR_ ||
+           mumutrk_Z > TrkMaxZ_ ||
+           DCAmumu > MuMuMaxDca_ )   continue;     /* added */
 
       // check dimuon vertex
       passed = hasGoodMuMuVertex(muTrackpTT, muTrackmTT, refitMupTT, refitMumTT,
@@ -1166,6 +1173,8 @@ BToKMuMu::buildBuToKMuMu(const edm::Event& iEvent)
   //    } // close kshort loop
     } // close mu+ loop
   } // close mu- loop
+
+  //  cout << "\n@@@ nb : " << nb << endl;  /* added cout statement */
 
   if ( nb > 0) 
     edm::LogInfo("myBu") << "Found " << nb << " Bu -> K+ mu mu.";    
@@ -1315,7 +1324,7 @@ BToKMuMu::hasGoodTrackDcaBs (const reco::TransientTrack TrackTT,
   
   DcaBs = theDCAXBS.perigeeParameters().transverseImpactParameter();
   DcaBsErr = theDCAXBS.perigeeError().transverseImpactParameterError();
-  if ( fabs(DcaBs/DcaBsErr) > TrkMaxDcaSigBs_ ) return false;
+  if ( fabs(DcaBs/DcaBsErr) < TrkMinDcaSigBs_ ) return false;
   return true;
 }
 
@@ -1357,6 +1366,7 @@ BToKMuMu::hasGoodClosestApproachTracks (const reco::TransientTrack muTrackpTT,
        TrkMaxR_) || (fabs(XingPoint.z()) > TrkMaxZ_)) return false;
 
   DCAmumu = ClosestApp.distance();
+
   if (DCAmumu > MuMuMaxDca_) return false;
  
   return true;
@@ -1881,6 +1891,10 @@ double
 BToKMuMu::computeEta (double Px, double Py, double Pz)
 {
   double P = sqrt(Px*Px + Py*Py + Pz*Pz);
+
+  // cout << "\n@@@ Px = " << Px << "\t" << "Py = " << Py << "\t" << "Pz = " << Pz << endl;
+  // cout << "\n@@@ P = " << P << endl;
+
   return 0.5*log((P + Pz) / (P - Pz));
 }
 
@@ -1890,6 +1904,9 @@ BToKMuMu::computePhi (double Px, double Py, double Pz)
   double phi = atan(Py / Px);
   if (Px < 0 && Py < 0) phi = phi - PI;
   if (Px < 0 && Py > 0) phi = phi + PI;
+
+  // cout << "\n@@@ phi = " << phi << endl;
+
   return phi;
 }
 
@@ -1901,6 +1918,9 @@ BToKMuMu::computeEtaPhiDistance (double Px1, double Py1, double Pz1,
   double eta1 = computeEta (Px1,Py1,Pz1);
   double phi2 = computePhi (Px2,Py2,Pz2);
   double eta2 = computeEta (Px2,Py2,Pz2);
+
+  // cout << "\n@@@ phi1 = " << phi1 << "\t" << "eta1 = " << eta1 << "\t" << "phi2 = " << phi2 << "\t" << "eta2 = " << eta2 << endl; 
+
   return sqrt((eta1-eta2) * (eta1-eta2) + (phi1-phi2) * (phi1-phi2));
 }
 
@@ -1913,6 +1933,8 @@ BToKMuMu::saveBuCtau(RefCountedKinematicTree vertexFitTree)
   bctau->push_back(bctau_temp);
   bctauerr->push_back(bctauerr_temp);
 }
+
+
 
 void
 BToKMuMu::saveGenInfo(const edm::Event& iEvent){
@@ -1983,6 +2005,9 @@ BToKMuMu::saveGenInfo(const edm::Event& iEvent){
     //const reco::Candidate & pip = *(ks->daughter(ipip));
     //const reco::Candidate & pim = *(ks->daughter(ipim));
     //const reco::Candidate & kp = *(kst.daughter(ikp));
+
+    if (ikp == -1) continue;
+
     const reco::Candidate & kp = *(b.daughter(ikp));
     const reco::Candidate *mum = NULL;
     const reco::Candidate *mup = NULL;
@@ -2071,6 +2096,8 @@ BToKMuMu::saveGenInfo(const edm::Event& iEvent){
     genmuppz = mup->pz();
   }
 }
+
+
 
 /*
 bool
@@ -2182,7 +2209,7 @@ BToKMuMu::saveKshortVariables(RefCountedKinematicTree ksVertexFitTree,
                         (iKshort.daughter(0)))->track()->d0Error());
   }
 }
-  */
+*/
 
 
 
@@ -2284,6 +2311,21 @@ BToKMuMu::saveTruthMatch(const edm::Event& iEvent){
     // truth match with mu-
     deltaEtaPhi = computeEtaPhiDistance(genmumpx, genmumpy, genmumpz,
                                         mumpx->at(i), mumpy->at(i), mumpz->at(i));
+
+    /*
+    cout << "\n@@@ deltaEtaPhi(mu-) = " << deltaEtaPhi << endl;
+
+    cout << "\n printing GEN values -----> " << endl;
+    cout << "genmumpx = " << genmumpx << endl;
+    cout << "genmumpy = " << genmumpy << endl;
+    cout << "genmumpz = " << genmumpz << endl;
+
+    cout << "\n printing RECO values -----> " << endl;
+    cout << "mumpx = " << mumpx->at(i) << endl;
+    cout << "mumpy = " << mumpy->at(i) << endl;
+    cout << "mumpz = " << mumpz->at(i) << endl;
+    */
+
     if (deltaEtaPhi < TruthMatchMuonMaxR_) {
       istruemum->push_back(true);
     } else {
@@ -2293,6 +2335,8 @@ BToKMuMu::saveTruthMatch(const edm::Event& iEvent){
     // truth match with mu+
     deltaEtaPhi = computeEtaPhiDistance(genmuppx, genmuppy, genmuppz,
                                         muppx->at(i), muppy->at(i), muppz->at(i));
+
+    // cout << "\n@@@ deltaEtaPhi(mu+) = " << deltaEtaPhi << endl;
   
     if (deltaEtaPhi < TruthMatchMuonMaxR_) {
       istruemup->push_back(true);
@@ -2334,6 +2378,9 @@ BToKMuMu::saveTruthMatch(const edm::Event& iEvent){
     // truth match with Kaon track
     deltaEtaPhi = computeEtaPhiDistance(gentrkpx, gentrkpy, gentrkpz,
                                         trkpx->at(i), trkpy->at(i), trkpz->at(i));
+
+    // cout << "\n@@@ deltaEtaPhi(Kaon) = " << deltaEtaPhi << endl;
+
     if (deltaEtaPhi < TruthMatchKaonMaxR_){
       istruetrk->push_back(true);
     } else {
@@ -2348,6 +2395,14 @@ BToKMuMu::saveTruthMatch(const edm::Event& iEvent){
     } else {
       istruebu->push_back(false);
     }
+
+    // cout << "istruemum = " << istruemum->at(i) << endl;
+    // cout << "istruemup = " << istruemup->at(i) << endl;
+    // cout << "istruetrk = " << istruetrk->at(i) << endl;
+    // cout << "istruebu  = " << istruebu->at(i)  << endl;
+
+
+
   }
 }
 

@@ -145,13 +145,13 @@ process.localV0Candidates = cms.EDProducer(
  
 process.ntuple = cms.EDAnalyzer(
     'BToKMuMu',
-    OutputFileName = cms.string("BToKMuMu_MC.root"),
+    OutputFileName = cms.string("BToKMuMu.root"),
 
     # particle properties 
     MuonMass = cms.untracked.double(0.10565837), 
-    MuonMassErr = cms.untracked.double(0.10565837*1e-6), 
+    MuonMassErr = cms.untracked.double(3.5*1e-9), 
     KaonMass = cms.untracked.double(0.493677),
-    KaonMassErr = cms.untracked.double(0.493677*1e-6),
+    KaonMassErr = cms.untracked.double(1.6*1e-5),
    # PionMass = cms.untracked.double(0.13957018), 
    # PionMassErr = cms.untracked.double(0.13957018*1e-6),
     #KshortMass = cms.untracked.double(0.497614), 
@@ -175,12 +175,12 @@ process.ntuple = cms.EDAnalyzer(
     IsMonteCarlo = cms.untracked.bool(False),
     TruthMatchMuonMaxR = cms.untracked.double(0.004), # [eta-phi]
     TruthMatchKaonMaxR = cms.untracked.double(0.3), # [eta-phi]
-    TruthMatchKsMaxVtx = cms.untracked.double(10.0), 
+   # TruthMatchKsMaxVtx = cms.untracked.double(10.0), 
 
     # HLT-trigger cuts 
     MuonMinPt = cms.untracked.double(3.5), # [GeV]
     MuonMaxEta = cms.untracked.double(2.2),  
-    MuonMaxDcaBs = cms.untracked.double(2.0), # [cm]
+    MuonMaxDcaBs = cms.untracked.double(2.0), # [cm] 
 
     MuMuMinPt = cms.untracked.double(6.9),      # [GeV/c]
     MuMuMinInvMass = cms.untracked.double(1.0), # [GeV/c2]
@@ -188,12 +188,12 @@ process.ntuple = cms.EDAnalyzer(
 
     MuMuMinVtxCl = cms.untracked.double(0.10),  
     MuMuMinLxySigmaBs = cms.untracked.double(3.0), 
-    MuMuMaxDca = cms.untracked.double(0.5), # [cm]
-    MuMuMinCosAlphaBs = cms.untracked.double(0.9),
+    MuMuMaxDca = cms.untracked.double(0.5), # [cm]   
+    MuMuMinCosAlphaBs = cms.untracked.double(0.9),   
 
     # pre-selection cuts 
     TrkMinPt = cms.untracked.double(0.4), # [GeV/c]
-    TrkMaxDcaSigBs = cms.untracked.double(1.2), # hadron DCA/sigma w/respect to BS [1.2]
+    TrkMinDcaSigBs = cms.untracked.double(1.2), # hadron DCA/sigma w/respect to BS [1.2]
     TrkMaxR = cms.untracked.double(110.0), # [cm]
     TrkMaxZ = cms.untracked.double(280.0), # [cm]
 
@@ -202,8 +202,8 @@ process.ntuple = cms.EDAnalyzer(
    # KstarMaxMass = cms.untracked.double(1.04), # [GeV/c2]  + 3 sigma of the width
 
     BMinVtxCl = cms.untracked.double(0.01), 
-    BMinMass = cms.untracked.double(2.0), # [GeV/c2] B+ mass = 5279 MeV 
-    BMaxMass = cms.untracked.double(8.0), # [GeV/c2] B+ mass = 5279 MeV 
+    BMinMass = cms.untracked.double(2.0), # [GeV/c2] B+ mass = 5279 MeV  
+    BMaxMass = cms.untracked.double(8.0), # [GeV/c2] B+ mass = 5279 MeV  
 
 )
 
