@@ -151,7 +151,7 @@ process.ntuple = cms.EDAnalyzer(
     MuonMass = cms.untracked.double(0.10565837), 
     MuonMassErr = cms.untracked.double(3.5*1e-9), 
     KaonMass = cms.untracked.double(0.493677),
-    KaonMassErr = cms.untracked.double(1.6*1e-5),
+	 KaonMassErr = cms.untracked.double(1.6*1e-5),
    # PionMass = cms.untracked.double(0.13957018), 
    # PionMassErr = cms.untracked.double(0.13957018*1e-6),
     #KshortMass = cms.untracked.double(0.497614), 
@@ -192,8 +192,8 @@ process.ntuple = cms.EDAnalyzer(
     MuMuMinCosAlphaBs = cms.untracked.double(0.9),   
 
     # pre-selection cuts 
-    TrkMinPt = cms.untracked.double(0.4), # [GeV/c]
-    TrkMinDcaSigBs = cms.untracked.double(1.2), # hadron DCA/sigma w/respect to BS [1.2]
+    TrkMinPt = cms.untracked.double(0.1), # [GeV/c]
+    TrkMinDcaSigBs = cms.untracked.double(0.0), # hadron DCA/sigma w/respect to BS [1.2]
     TrkMaxR = cms.untracked.double(110.0), # [cm]
     TrkMaxZ = cms.untracked.double(280.0), # [cm]
 
