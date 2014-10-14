@@ -59,3 +59,4 @@ g_LastFilterNames = [i[1] for i in g_TriggerNames_LastFilterNames]
 process.ntuple.TriggerNames = cms.vstring(g_TriggerNames)
 process.ntuple.LastFilterNames = cms.vstring(g_LastFilterNames)
 process.ntuple.IsMonteCarlo = cms.untracked.bool(True)
+process.ntuple.KeepGENOnly  = cms.untracked.bool(False)
