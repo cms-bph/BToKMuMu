@@ -1164,7 +1164,7 @@ BToKMuMu::hasGoodMuonDcaBs (const reco::TransientTrack muTrackTT,
   
   muDcaBs = theDCAXBS.perigeeParameters().transverseImpactParameter();
   muDcaBsErr = theDCAXBS.perigeeError().transverseImpactParameterError();
-  if ( muDcaBs > MuonMaxDcaBs_ ) return false;
+  if ( fabs(muDcaBs) > MuonMaxDcaBs_ ) return false;
   return true;
 }
 
