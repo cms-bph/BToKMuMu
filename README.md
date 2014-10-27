@@ -16,7 +16,15 @@
 
 >  cp -r /afs/cern.ch/user/g/gechen/gechen/public/BToKMuMu/RecoVertex ./
 
+>  scram b
+
+>  mkdir ana
+
+>  cd ana/
+
 >  git clone https://github.com/cms-bph/BToKMuMu.git 
+
+>  cd ../
 
 >  scram b
 
@@ -24,7 +32,8 @@
 ## Run 
 ########
 
->  cd BToKMuMu/python
+>  cd ana/BToKMuMu/python
 
 >  cmsRun btokmumu_cfg.py 
+
 
