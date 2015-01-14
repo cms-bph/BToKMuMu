@@ -23,7 +23,8 @@ Run Fitter:
 	
 	./fit <function> <input.root>
 
-0. Test on Data Bmass fitter            
+0. Test on Data Bmass fitter:
+	
 	
 	source Fitter_bmass_Data_AllCut.sh
 
