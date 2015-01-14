@@ -22,96 +22,131 @@ const double KAON_MASS = 0.493677;
 // user defined variables
 TDatime t_begin_ , t_now_ ;
 int n_processed_, n_selected_;
+int ww=0;
 
 TTree *tree_;
 
 // Branch variables for new tree
-int     Nb             = 0;
-double  Mumumass       = 0;
-double  Mumumasserr    = 0;
-double  Kmass          = 0;
-double  Trkpt          = 0;
-double  Trkdcasigbs    = 0;  // 2014-08-07 N.A.
+//int     Nb             = -999;
 
-double  Bmass          = 0;
-int     Bchg           = 0;
-double  Bpt            = 0;
-//double  Beta           = 0;
-double  Bphi           = 0;  //2014-05-22 N.A.
-double  Bvtxcl         = 0;
-double  Blxysig        = 0;
-double  Bcosalphabs    = 0;
-double  Bcosalphabs2D  = 0;  //2014-05-22 N.A.
-double  Bctau          = 0;
-// 2014-05-22 N.A.
-double  Q2             = 0;
-double  CosThetaL      = 999;
-//double  CosThetaK      = 999;
+TLorentzVector Mum_4vec   ;  //N.A.
+TLorentzVector Mup_4vec   ;  //N.A.
+double  Mumumass          = -999;
+double  Mumumasserr       = -999;
+
+TLorentzVector Tk_4vec    ;  //N.A.
+int     TkChg             = -999;
+double  Trkdcasigbs       = -999;  
+
+TLorentzVector B_4vec     ;  //N.A.
+double  Bmass             = -999;
+int     Bchg              = -999;
+double  Bvtxcl            = -999;
+double  Blxysig           = -999;
+double  Bcosalphabs       = -999;
+double  Bcosalphabs2D     = -999;
+double  Bctau             = -999;
+
+double  Q2                = -999;
+double  CosThetaL         = -999;
 
 // Branches for Generator level information
-int     genBChg        = 999;
-double  genBPt         = 0;
-double  genBEta        = 0;
-double  genBPhi        = 0;
-double  genBVtxX       = 0;
-double  genBVtxY       = 0;
-double  genBVtxZ       = 0;
-double  genMupPt       = 0;
-double  genMupEta      = 0;
-double  genMupPhi      = 0;
-double  genMumPt       = 0;
-double  genMumEta      = 0;
-double  genMumPhi      = 0;
-int     genTkChg       = 999;
-double  genTkPt        = 0;
-double  genTkEta       = 0;
-double  genTkPhi       = 0;
-double  genQ2          = 0;
-double  genCosThetaL   = 999;
-//double  genCosThetaK   = 999;
+int     genBChg        = -999;
+double  genBPt         = -999;
+double  genBEta        = -999;
+double  genBPhi        = -999;
+double  genBVtxX       = -999;
+double  genBVtxY       = -999;
+double  genBVtxZ       = -999;
+double  genMupPt       = -999;
+double  genMupEta      = -999;
+double  genMupPhi      = -999;
+double  genMumPt       = -999;
+double  genMumEta      = -999;
+double  genMumPhi      = -999;
+int     genTkChg       = -999;
+double  genTkPt        = -999;
+double  genTkEta       = -999;
+double  genTkPhi       = -999;
+double  genQ2          = -999;
+double  genCosThetaL   = -999;
+/*
+//TLorentzVector genB_4vec  = -999;  //N.A.
+
+int     genBChg           = -999;
+double  genBVtxX          = -999;
+double  genBVtxY          = -999;
+double  genBVtxZ          = -999;
+
+//TLorentzVector genMum_4vec= -999;  //N.A.
+//TLorentzVector genMup_4vec= -999;  //N.A.
+
+//TLorentzVector genTk_4vec = -999;  //N.A.
+int     genTkChg          = -999;
+
+double  genQ2             = -999;
+double  genCosThetaL      = -999;
+*/
 
 void ClearEvent() { 
-	Nb                  = 0;
-	Mumumass            = 0;
-	Mumumasserr         = 0;
-	Kmass               = 0;
-	Trkpt               = 0;
-	Trkdcasigbs         = 0;   // 2014-08-07 N.A.
-	Bmass               = 0;
-	Bchg                = 0;
-	Bpt                 = 0;
-	Bphi                = 0;          // 2014-05-22 N.A.
-	Bvtxcl              = 0;
-	Blxysig             = 0;
-	Bcosalphabs         = 0;
-	Bcosalphabs2D       = 0; // 2014-05-22 N.A.
-	Bctau               = 0;
-//	2014-05-22 N.A.
-	Q2                  = 0;
-	CosThetaL           = 999;
-//	CosThetaK           = 999;
+//	Nb                  = -999;
+//	Mum_4vec            ;
+//	Mup_4vec            ;
+	Mumumass            = -999;
+	Mumumasserr         = -999;
+
+//	Tk_4vec             ;
+	TkChg               = -999;
+	Trkdcasigbs         = -999;   
+	
+//	B_4vec              ;
+	Bmass               = -999;
+	Bchg                = -999;
+	Bvtxcl              = -999;
+	Blxysig             = -999;
+	Bcosalphabs         = -999;
+	Bcosalphabs2D       = -999; 
+	Bctau               = -999;
+	
+	Q2                  = -999;
+	CosThetaL           = -999;
 
 //	GenLevel
-	genBChg             = 999;
-	genBPt              = 0;
-	genBEta             = 0;
-	genBPhi             = 0;
-	genBVtxX            = 0;
-	genBVtxY            = 0;
-	genBVtxZ            = 0;
-	genMupPt            = 0;
-	genMupEta           = 0;
-	genMupPhi           = 0;
-	genMumPt            = 0;
-	genMumEta           = 0;
-	genMumPhi           = 0;
-	genTkChg            = 999;
-	genTkPt             = 0;
-	genTkEta            = 0;
-	genTkPhi            = 0;
-	genQ2               = 0;
-	genCosThetaL        = 999;
-//	genCosThetaK        = 999;
+	genBChg             = -999;
+	genBPt              = -999;
+	genBEta             = -999;
+	genBPhi             = -999;
+	genBVtxX            = -999;
+	genBVtxY            = -999;
+	genBVtxZ            = -999;
+	genMupPt            = -999;
+	genMupEta           = -999;
+	genMupPhi           = -999;
+	genMumPt            = -999;
+	genMumEta           = -999;
+	genMumPhi           = -999;
+	genTkChg            = -999;
+	genTkPt             = -999;
+	genTkEta            = -999;
+	genTkPhi            = -999;
+	genQ2               = -999;
+	genCosThetaL        = -999;
+/*
+   genB_4vec           = -999;
+	genBChg             = -999;
+	genBVtxX            = -999;
+	genBVtxY            = -999;
+	genBVtxZ            = -999;
+	
+	genMum_4vec         = -999;
+	genMup_4vec         = -999;
+	
+	genTk_4vec          = -999;
+	genTkChg            = -999;
+	
+	genQ2               = -999;
+	genCosThetaL        = -999;
+*/
 }
 
 void str_replace(std::string& str, const std::string& oldStr, const std::string& newStr) {
@@ -155,29 +190,29 @@ void SingleBuToKMuMuSelector::Begin(TTree * /*tree*/) {
 void SingleBuToKMuMuSelector::SlaveBegin(TTree * /*tree*/) {
 	string option = GetOption();
 	tree_ = new TTree("tree", "tree");
-	tree_->Branch("Mumumass",        &Mumumass,         "Mumumass/D");
-	tree_->Branch("Mumumasserr",     &Mumumasserr,      "Mumumasserr/D");
-	tree_->Branch("Kmass",           &Kmass,            "Kmass/D");
-	tree_->Branch("Trkpt",           &Trkpt,            "Trkpt/D");
-	tree_->Branch("Trkdcasigbs",     &Trkdcasigbs,      "Trkdcasigbs/D"); // 2014-08-07 N.A.
+//	tree_->Branch("Nb      ",        &Nb      ,         "Nb      /I");  //N.A.
 	
+	tree_->Branch("Mum_4vec"   ,     &Mum_4vec   ,      32000  ,  0 );  //N.A.
+	tree_->Branch("Mup_4vec"   ,     &Mup_4vec   ,      32000  ,  0 );  //N.A.
+	tree_->Branch("Mumumass"   ,     &Mumumass   ,      "Mumumass/D");
+	tree_->Branch("Mumumasserr",     &Mumumasserr,      "Mumumasserr/D");
+	
+	tree_->Branch("Tk_4vec"    ,     &Tk_4vec    ,      32000  ,  0 );  //N.A.
+	tree_->Branch("TkChg"      ,     &TkChg      ,      "TkChg/I");  
+	tree_->Branch("Trkdcasigbs",     &Trkdcasigbs,      "Trkdcasigbs/D");  
+	
+	tree_->Branch("B_4vec"     ,     &B_4vec     ,      32000  ,  0 );  //N.A.
 	tree_->Branch("Bmass",           &Bmass,            "Bmass/D");
 	tree_->Branch("Bchg",            &Bchg,             "Bchg/I");
-	tree_->Branch("Bpt",             &Bpt,              "Bpt/D");
-	tree_->Branch("Bphi",            &Bphi ,            "Bphi/D"); // 2014-05-22 N.A.
-	
 	tree_->Branch("Bvtxcl",          &Bvtxcl,           "Bvtxcl/D");
 	tree_->Branch("Blxysig",         &Blxysig,          "Blxysig/D");
 	tree_->Branch("Bcosalphabs",     &Bcosalphabs,      "Bcosalphabs/D");
-	tree_->Branch("Bcosalphabs2D",   &Bcosalphabs2D ,   "Bcosalphabs2D/D"); // 2014-05-22 N.A.
+	tree_->Branch("Bcosalphabs2D",   &Bcosalphabs2D ,   "Bcosalphabs2D/D"); 
 	tree_->Branch("Bctau",           &Bctau,            "Bctau/D");
 	
-//	2014-05-22 N.A.  
 	tree_->Branch("Q2" ,             &Q2 ,              "Q2/D");
 	tree_->Branch("CosThetaL" ,      &CosThetaL ,       "CosThetaL/D");
-//	tree_->Branch("CosThetaK" ,      &CosThetaK ,       "CosThetaK/D");
 //////////////////////////////////////////////////////////////////////////
-//	2014-05-22 N.A.
 	string datatype = get_option_value(option, "datatype");
 	std::map<string,int> maptype;
 	maptype.insert(std::pair<string,int>("data",1));
@@ -189,14 +224,28 @@ void SingleBuToKMuMuSelector::SlaveBegin(TTree * /*tree*/) {
 		case 1: break;
 		case 2:
 		   tree_->Branch("genBChg"      , &genBChg      , "genBChg/I");
+			tree_->Branch("genBPt"       , &genBPt       , "genBPt/D");
+			tree_->Branch("genBEta"      , &genBEta      , "genBEta/D");
 			tree_->Branch("genBPhi"      , &genBPhi      , "genBPhi/D");
 			tree_->Branch("genMupPt"     , &genMupPt     , "genMupPt/D");
 			tree_->Branch("genMupEta"    , &genMupEta    , "genMupEta/D");
 			tree_->Branch("genMumPt"     , &genMumPt     , "genMumPt/D");
 			tree_->Branch("genMumEta"    , &genMumEta    , "genMumEta/D");
+			tree_->Branch("genTkChg"     , &genTkChg     , "genTkChg/I");
+			tree_->Branch("genTkPt"      , &genTkPt      , "genTkPt/D");
+			tree_->Branch("genTkEta"     , &genTkEta     , "genTkEta/D");
 			tree_->Branch("genQ2"        , &genQ2        , "genQ2/D");
 			tree_->Branch("genCosThetaL" , &genCosThetaL , "genCosThetaL/D");
-//			tree_->Branch("genCosThetaK" , &genCosThetaK , "genCosThetaK/D");
+		/*
+			tree_->Branch("genB_4vec"    , &genB_4vec    ,  32000  ,  0 );  //N.A.
+		   tree_->Branch("genBChg"      , &genBChg      , "genBChg/I");
+			tree_->Branch("genMum_4vec"  , &genMum_4vec  ,  32000  ,  0 );  //N.A.
+			tree_->Branch("genMup_4vec"  , &genMup_4vec  ,  32000  ,  0 );  //N.A.
+			tree_->Branch("genTk_4vec"   , &genTk_4vec   ,  32000  ,  0 );  //N.A.
+		   tree_->Branch("genTkChg"     , &genTkChg     , "genTkChg/I");
+			tree_->Branch("genQ2"        , &genQ2        , "genQ2/D");
+			tree_->Branch("genCosThetaL" , &genCosThetaL , "genCosThetaL/D");
+		*/	
 			break;
 		case 998:
 		   tree_->Branch("genBChg"      , &genBChg      , "genBChg/I");
@@ -216,25 +265,24 @@ void SingleBuToKMuMuSelector::SlaveBegin(TTree * /*tree*/) {
 			break;
 		case 999: 
 		   tree_->Branch("genBChg"      , &genBChg      , "genBChg/I");
-		   tree_->Branch("genBPt"       , &genBPt       , "genBPt/D");
-		   tree_->Branch("genBEta"      , &genBEta      , "genBEta/D");
-	 	   tree_->Branch("genBPhi"      , &genBPhi      , "genBPhi/D");
-		   tree_->Branch("genBVtxX"     , &genBVtxX     , "genBVtxX/D");
-		   tree_->Branch("genBVtxY"     , &genBVtxY     , "genBVtxY/D");
-		   tree_->Branch("genBVtxZ"     , &genBVtxZ     , "genBVtxZ/D");
-		   tree_->Branch("genMupPt"     , &genMupPt     , "genMupPt/D");
-		   tree_->Branch("genMupEta"    , &genMupEta    , "genMupEta/D");
-		   tree_->Branch("genMupPhi"    , &genMupPhi    , "genMupPhi/D");
-		   tree_->Branch("genMumPt"     , &genMumPt     , "genMumPt/D");
-		   tree_->Branch("genMumEta"    , &genMumEta    , "genMumEta/D");
-		   tree_->Branch("genMumPhi"    , &genMumPhi    , "genMumPhi/D");
-		   tree_->Branch("genTkChg"     , &genTkChg     , "genTkChg/I");
-		   tree_->Branch("genTkPt"      , &genTkPt      , "genTkPt/D");
-		   tree_->Branch("genTkEta"     , &genTkEta     , "genTkEta/D");
-		   tree_->Branch("genTkPhi"     , &genTkPhi     , "genTkPhi/D");
-		   tree_->Branch("genQ2"        , &genQ2        , "genQ2/D");
-		   tree_->Branch("genCosThetaL" , &genCosThetaL , "genCosThetaL/D");
-//		   tree_->Branch("genCosThetaK" , &genCosThetaK , "genCosThetaK/D");
+			tree_->Branch("genBPt"       , &genBPt       , "genBPt/D");
+			tree_->Branch("genBEta"      , &genBEta      , "genBEta/D");
+			tree_->Branch("genBPhi"      , &genBPhi      , "genBPhi/D");
+			tree_->Branch("genBVtxX"     , &genBVtxX     , "genBVtxX/D");
+			tree_->Branch("genBVtxY"     , &genBVtxY     , "genBVtxY/D");
+			tree_->Branch("genBVtxZ"     , &genBVtxZ     , "genBVtxZ/D");
+			tree_->Branch("genMupPt"     , &genMupPt     , "genMupPt/D");
+			tree_->Branch("genMupEta"    , &genMupEta    , "genMupEta/D");
+			tree_->Branch("genMupPhi"    , &genMupPhi    , "genMupPhi/D");
+			tree_->Branch("genMumPt"     , &genMumPt     , "genMumPt/D");
+			tree_->Branch("genMumEta"    , &genMumEta    , "genMumEta/D");
+			tree_->Branch("genMumPhi"    , &genMumPhi    , "genMumPhi/D");
+			tree_->Branch("genTkChg"     , &genTkChg     , "genTkChg/I");
+			tree_->Branch("genTkPt"      , &genTkPt      , "genTkPt/D");
+			tree_->Branch("genTkEta"     , &genTkEta     , "genTkEta/D");
+			tree_->Branch("genTkPhi"     , &genTkPhi     , "genTkPhi/D");
+			tree_->Branch("genQ2"        , &genQ2        , "genQ2/D");
+			tree_->Branch("genCosThetaL" , &genCosThetaL , "genCosThetaL/D");
          break;
 		default:
 		printf("No compatible datatype found. Please check use following types...\n\t\t[");
@@ -258,19 +306,18 @@ Bool_t SingleBuToKMuMuSelector::Process(Long64_t entry) {
 	
 	GetEntry(entry);
 	n_processed_ += 1;
-	Nb = nb;
+//	Nb = nb;
 	
-//	if (datatype != "data") SaveGen();  ///// 13-08-2014 /////////////////////// for MC ////////////////////////////////////////////////
+	if (datatype != "data") SaveGen();  ///// 13-08-2014 /////////////////////// for Signal MC ////////////////////////////////////////////////
 	
 	int i = SelectB(cut);
 	if ( i != -1 && ( datatype == "data" || istruebu->at(i) )) {
-//	if (i != -1 && nb != 0) {
 		n_selected_ += 1;
 		SaveEvent(i);
-	//	if ( datatype != "data" ) SaveGen();
-		tree_->Fill();  ///////////////////////////////////////////////////////// for data
+//		if ( datatype != "data" ) SaveGen();    /////  12-04-2014  /////  for J/PsiK & Psi2SK & J/PsiX & K*0MuMu  MC  /////////////////////
+//		tree_->Fill();  /////// for data & J/PsiK & Psi2SK & J/PsiX & K*0MuMu  MC
 	}
-//	tree_->Fill();  //////////////////////////////////////////////////////////// for MC
+	tree_->Fill();  ////////// for Signal MC
 	return kTRUE;
 }
 
@@ -292,6 +339,8 @@ void SingleBuToKMuMuSelector::Terminate() {
 	n_processed_,  n_selected_, 
 	t_now_.Convert() - t_begin_.Convert(),
 	float (n_processed_) / ( t_now_.Convert() - t_begin_.Convert() ) );
+
+	cout<<"ww"<<ww<<endl;
 }
 
 
@@ -327,7 +376,7 @@ int SingleBuToKMuMuSelector::SelectB(string cut) {
 			if ( ! HasGoodMuons(i) ) continue;
 			if ( ! TriggerSelections(i) ) continue;
 //			if ( ! KpSelections(i) ) continue; // 2014-05-22 N.A.
-			if ( ! OptimizedSelections(i) ) continue;
+//			if ( ! OptimizedSelections(i) ) continue;
 			if (bvtxcl->at(i) > best_bvtxcl) {
 				best_bvtxcl = bvtxcl->at(i);
 				best_idx = i;
@@ -361,38 +410,60 @@ bool SingleBuToKMuMuSelector::TriggerSelections(int i){
 		mumdcabs->at(i) < 0.1  //2
 		&& mupdcabs->at(i) < 0.1  //2
 		&& mumudca->at(i) < 0.1  //0.5
-		&& mumuvtxcl->at(i) > 0.09  //0.05
-		&& (mumulsbs->at(i)/mumulsbserr->at(i)) > 3
+	//	&& mumuvtxcl->at(i) > 0.09  //0.05    // 27-10-2014 N.A.
+	//	&& (mumulsbs->at(i)/mumulsbserr->at(i)) > 3  // 27-10-2014 N.A.
 		&& mumucosalphabs->at(i) > 0.999  //0.9
+	//	&& fabs( trkdcabs->at(i)/trkdcabserr->at(i) ) > 1.20  // 27-20-2014 N.A.
+	//	&& trkpt->at(i) > 1.6  //2.7  ///////////////////////////////////////////////////////////////////////////////////////////////////////
 		) return true;
 	return false;
 }
 bool SingleBuToKMuMuSelector::OptimizedSelections(int i) {
+/*	if ((mumumass->at(i) > 3.096916-5. *mumumasserr->at(i)) && (mumumass->at(i) < 3.096916+3.5*mumumasserr->at(i))
+		) return false;
+	else if (( mumumass->at(i) > 3.686109-3.5*mumumasserr->at(i) ) && (mumumass->at(i) < 3.686109+3.5*mumumasserr->at(i)) 
+		) return false;
+*/		
 	if ( // Optimized Selections after cut0
-		   trkpt->at(i) > 2.7
-		&& bvtxcl->at(i) > 0.12
-		&& ( blsbs->at(i) / blsbserr->at(i) ) > 9.4
-		&& bcosalphabs2D->at(i) > 0.9996
+		//   bmass->at(i) >= 5.23
+		 trkpt->at(i) > 1.6  //2.7
+/*		&& bvtxcl->at(i) > 0.09  //0.12
+		&& ( blsbs->at(i) / blsbserr->at(i) ) > 8.2
+		&& bcosalphabs2D->at(i) > 0.9997
 		&& bmass->at(i) > 5.0 && bmass->at(i) < 5.56
-	// 22-08-2014 N.A.
-	//	&& (  mumumass->at(i) < 2.923416 || ( mumumass->at(i) > 3.201016 && mumumass->at(i) < 3.570009 )  || mumumass->at(i) > 3.802209 ) // J/PSi && PSi(2S) cut
+		&& fabs( (trkdcabs->at(i))/(trkdcabserr->at(i)) )> 1.4  //1.2
+	//	&& bctau->at(i) < 2.  // N.A. 12-04 
+		&& ( ( mumumass->at(i) < 3.096916-5. *mumumasserr->at(i) ) || ( ( mumumass->at(i) > 3.096916+3.5*mumumasserr->at(i) ) && ( mumumass->at(i) < 3.686109-3.5*mumumasserr->at(i) ) )  || (mumumass->at(i) > 3.686109+3.5*mumumasserr->at(i)) ) // J/PSi && PSi(2S) cut
 	//	&& fabs(bmass->at(i) - 5.279) < 0.060  /////////////////////////////////////////////////////////////////////////////
-		&& fabs( bmass->at(i) - mumumass->at(i) - 2.182 ) > 0.12 // CDF cut for JPSi
-		&& fabs( bmass->at(i) - mumumass->at(i) - 1.593 ) > 0.08 // CDF cut for PSi(2S)
+	//	&& fabs( bmass->at(i) - mumumass->at(i) - 2.182 ) > 0.18  //0.12 // CDF cut for JPSi
+	//	&& fabs( bmass->at(i) - mumumass->at(i) - 1.593 ) > 0.09  //0.08 // CDF cut for PSi(2S)
+*/		) return true;
+/*	else if (
+		   bmass->at(i) < 5.23
+		&& trkpt->at(i) > 1.6  //2.7
+		&& bvtxcl->at(i) > 0.09  //0.12
+		&& ( blsbs->at(i) / blsbserr->at(i) ) > 8.2
+		&& bcosalphabs2D->at(i) > 0.9997
+		&& bmass->at(i) > 5.0 && bmass->at(i) < 5.56
+		&& fabs( (trkdcabs->at(i))/(trkdcabserr->at(i)) )> 1.4  //1.2
+	//	&& bctau->at(i) < 2.  // N.A. 12-04 
+		&& ( ( mumumass->at(i) < 3.096916-5. *mumumasserr->at(i) ) || ( ( mumumass->at(i) > 3.096916+3.5*mumumasserr->at(i) ) && ( mumumass->at(i) < 3.686109-3.5*mumumasserr->at(i) ) )  || (mumumass->at(i) > 3.686109+3.5*mumumasserr->at(i)) ) // J/PSi && PSi(2S) cut
+		
+		&& fabs( bmass->at(i) - mumumass->at(i) - 2.182 ) > 0.14  //0.12 // CDF cut for JPSi
+		&& fabs( bmass->at(i) - mumumass->at(i) - 1.593 ) > 0.08  //0.08 // CDF cut for PSi(2S)
 		) return true;
-	return false;
+*/	return false;
 }
 bool SingleBuToKMuMuSelector::KpSelections(int i){
 	if ( // Kaon
 		trkpt->at(i) > 2.3
 		&& trkchg->at(i) == +1
-		//&& (trkdcabs->at(i))/(trkdcabserr->at(i)) > 1.3
       ) return true;
 	return false;
 }
 void SingleBuToKMuMuSelector::SaveEvent(int i)
 {
-	TLorentzVector B_4vec, Mup_4vec, Mum_4vec, Tk_4vec, buff1, buff2, buff3;
+	TLorentzVector buff1, buff2, buff3;
 	Mup_4vec.SetXYZM(muppx->at(i),muppy->at(i),muppz->at(i),MUON_MASS);
 	Mum_4vec.SetXYZM(mumpx->at(i),mumpy->at(i),mumpz->at(i),MUON_MASS);
 	Tk_4vec.SetXYZM(trkpx->at(i),trkpy->at(i),trkpz->at(i),KAON_MASS);
@@ -402,19 +473,21 @@ void SingleBuToKMuMuSelector::SaveEvent(int i)
 	B_4vec = buff1;
 	Bmass = buff1.M();
 	Bchg = bchg->at(i);
+	TkChg = trkchg->at(i);
 	Bvtxcl = bvtxcl->at(i);
 	Blxysig = (blsbs->at(i)/blsbserr->at(i));
 	Bcosalphabs = bcosalphabs->at(i);
-	Bcosalphabs2D = bcosalphabs2D->at(i); // 2014-05-22 N.A.
+	Bcosalphabs2D = bcosalphabs2D->at(i); 
 	Bctau = bctau->at(i);
+	if (Tk_4vec.Pt() != trkpt->at(i)) { cout<<"Tk_4vec.Pt()="<<Tk_4vec.Pt()<<" TrkPt="<<trkpt->at(i)<<" trkpx->at(i)="<<trkpx->at(i)<<" Tk_4vec.Px()="<<Tk_4vec.Px()<<" trkpy->at(i)="<<trkpy->at(i)<<" Tk_4vec.Py()="<<Tk_4vec.Py()<<" trkpz->at(i)="<<trkpz->at(i)<<" Tk_4vec.Pz()="<<Tk_4vec.Pz()<<endl; ww++; }
+//	if (B_4vec->Pt() < 8.0 ) 
+//	if (bmass->at(i) == buff1.M()) { cout<<buff1.M()<<"    Bmass   "<<bmass->at(i)<<endl;}
+//	if (trkpt->at(i) != Tk_4vec.Pt()) cout<<trkpt->at(i)<<" TrkP   "<<Tk_4vec.Pt()<<endl;
+//	if (mumumass->at(i) != buff2.M()) cout<<mumumass->at(i)<<" mumumass   "<<buff2.M()<<endl;
 	
-	Bpt = buff1.Pt();
-	Bphi = B_4vec.Phi(); // 2014-05-22 N.A.
 	Mumumass = buff2.M();
-	Mumumasserr = mumumasserr->at(i); // 2014-05-22 N.A.
-	Kmass = Tk_4vec.M();
-	Trkpt = Tk_4vec.Pt();
-	Trkdcasigbs = fabs( trkdcabs->at(i)/trkdcabserr->at(i) ); // 2014-05-22 N.A.
+	Mumumasserr = mumumasserr->at(i); 
+	Trkdcasigbs = fabs( trkdcabs->at(i)/trkdcabserr->at(i) ); 
 	Q2 = pow(buff2.M(),2);
 //	2014-05-23 N.A.
 	buff1.Boost(-buff2.X()/buff2.T(),-buff2.Y()/buff2.T(),-buff2.Z()/buff2.T());
