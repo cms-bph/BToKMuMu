@@ -24,16 +24,16 @@ Run Fitter:
 	./fit <function> <input.root>
 
 0. Test on Data Bmass fitter            >>>>>>>>>>>>>>>
-
-   source Fitter_bmass_Data_AllCut.sh
+   
+	source Fitter_bmass_Data_AllCut.sh
 
 1. Angular fitter in gen level          >>>>>>>>>>>>>>>
-
-   ./fit angular_gen BToKMuMu_GENOnly_8TeV_genonly_v3-1.root
+   
+	./fit angular_gen BToKMuMu_GENOnly_8TeV_genonly_v3-1.root
 
 2. Calculate efficiency                 >>>>>>>>>>>>>>>
-
-   ./fit accXrecoEff AllCut/MC_Signal_AllCuts_v3.root
+   
+	./fit accXrecoEff AllCut/MC_Signal_AllCuts_v3.root
 
 3. Angular fitter in reco level         >>>>>>>>>>>>>>>
 
