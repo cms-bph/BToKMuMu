@@ -45,15 +45,15 @@ Run Fitter:
 
 5.Get bmass peaking bkg. from mc      
 	
-	./fit angular2D_1b_YpPm_Jpsi AllCut/MC_JPsiK_AllCuts_v3.root
+	./fit angular2D_1b_YpPm AllCut/MC_JPsiK_AllCuts_v3.root
 	
-	./fit angular2D_1b_YpPm_Psi AllCut/MC_Psi2SK_AllCuts_v3.root
+	./fit angular2D_1b_YpPm AllCut/MC_Psi2SK_AllCuts_v3.root
 
 6.Get cosThetaL peaking bkg. from mc   
 	
-	./fit angular2D_2a_PkPl_Jpsi AllCut/MC_JPsiK_AllCuts_v3.root
+	./fit angular2D_2a_PkPl AllCut/MC_JPsiK_AllCuts_v3.root
    
-	./fit angular2D_2a_PkPl_Psi AllCut/MC_Psi2SK_AllCuts_v3.root
+	./fit angular2D_2a_PkPl AllCut/MC_Psi2SK_AllCuts_v3.root
 
 7.Get cosThetaL comb. bkg. from data   
 	
