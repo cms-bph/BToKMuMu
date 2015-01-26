@@ -102,14 +102,16 @@ def convert_bytes(bytes_):
         size = '%.2fb' % bytes_
     return size
 
-def create_batch_cmd(job=None, main='afb'):
-    cmd = sys.argv[1:] 
+def create_batch_cmd(job=None, main='afb'):  ### remove "-b"
+    #cmd = sys.argv[1:]   ### after fit.py, start from function 
+    cmd = sys.argv[3:]   ### after fit.py, start from function 
     cmd.remove('-b')
+    #cmd.remove('data')
     if job is not None:
         range_idx = cmd.index('submit') + 1
         cmd[range_idx] = str(job)
 
-    cmd = main + ' ' + ' '.join(cmd)
+    cmd = main + ' ' + sys.argv[1] + ' ' + ' '.join(cmd)  ### add ' '
     return cmd
 
     
@@ -1045,7 +1047,7 @@ def scram_build(cmssw):
     
 
 def set_file(path, label, name, suffix, mode='', test=False):
-    path_ = os.path.join(path, label)
+    path_ = os.path.join(path, label)   ### create dir
 
     if test:
         name += '_test'
@@ -1192,6 +1194,9 @@ date
 hostname
 
 .  ~/.bashrc
+
+source ~/setrootenv6.sh
+
 %s
 
 %s
@@ -1202,7 +1207,7 @@ date
     f = UserFile()
     f.append(bash_content) 
     f.output(bashfile)
-    os.chmod(bashfile, 0755)
+    os.chmod(bashfile, 0755)  ## can 
     return bashfile
 
    

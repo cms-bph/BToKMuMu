@@ -15,54 +15,27 @@ Run Selection:
 	
 	./sel <datatype> <cut> <input.root> <output.root>
 
-Run Fitter:
+Run Fitter: ( more details in README.txt )
 	
 	mkdir plots/
 	mkdir RootFiles/
 	mkdir fitParameters/
 	
-	./fit <function> <input.root>
+	./fit <function> <input.root> <iBin>
 
-0.Test on Data Bmass fitter
+Fit with batch mode using python: ( First of all, make sure that "test = False" in fit.py !!! )   
 	
-	source Fitter_bmass_Data_AllCut.sh
-
-1.Angular fitter in gen level          
+	./fit.py <function> <datatype> <input.root>  <iBin>  -b
 	
-	./fit angular_gen BToKMuMu_GENOnly_8TeV_genonly_v3-1.root
+	./fit.py angular_gen mc.gen ../RootFiles/MC_GENOnly/BToKMuMu_GENOnly_8TeV_genonly_v3-1.root  1  -b
 
-2.Calculate efficiency                 
+The commands are collected in .sh files:  
 	
-	./fit accXrecoEff AllCut/MC_Signal_AllCuts_v3.root
-
-3.Angular fitter in reco level         
+	gen.sh                 for Gen level fitter.   
 	
-	./fit angular_reco AllCut/MC_Signal_AllCuts_v3.root
+	accXreco.sh            for Efficiency calculation and fit.
 
-4.Get bmass shape from signal mc       
+	reco.sh                for Reco level fitter.
 	
-	./fit angular2D_1a_Sm AllCut/MC_Signal_AllCuts_v3.root
-
-5.Get bmass peaking bkg. from mc      
-	
-	./fit angular2D_1b_YpPm AllCut/MC_JPsiK_AllCuts_v3.root
-	
-	./fit angular2D_1b_YpPm AllCut/MC_Psi2SK_AllCuts_v3.root
-
-6.Get cosThetaL peaking bkg. from mc   
-	
-	./fit angular2D_2a_PkPl AllCut/MC_JPsiK_AllCuts_v3.root
-   
-	./fit angular2D_2a_PkPl AllCut/MC_Psi2SK_AllCuts_v3.root
-
-7.Get cosThetaL comb. bkg. from data   
-	
-	./fit angular2D_prior AllCut/Data_KMuMu_AllCuts_v3.root
-
-8.Angular fitter in data              
-	
-	./fit angular2D AllCut/Data_KMuMu_AllCuts_v3.root 1
-
-
 
 

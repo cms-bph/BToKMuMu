@@ -91,7 +91,7 @@ def check_and_join(filepath, filename, mode=''):
         sys.stdout.write('Skip checking root:// ...\n')
         
     else: 
-        if not os.access(filepath, os.F_OK):
+        if not os.access(filepath, os.F_OK):   ### F_OK file is OK
             sys.stdout.write('creating dir %s ...' % filepath)
             os.makedirs(filepath)
             sys.stdout.write(' OK.\n')
@@ -99,8 +99,8 @@ def check_and_join(filepath, filename, mode=''):
     file_ = os.path.join(filepath, filename)
     if os.access(file_, os.F_OK) :
         tmpfile = make_tmpfile(file_)
-        shutil.copy2(file_, tmpfile)
-        if mode == 'w':
+        shutil.copy2(file_, tmpfile)   ### copy2: deep copy
+        if mode == 'w':   ### w : write
             os.remove(file_)
 
     return file_

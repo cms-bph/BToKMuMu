@@ -10,6 +10,8 @@
 #include <math.h>
 #include <string.h>
 //#include <regex>
+#include "Math/MinimizerOptions.h"
+#include "TROOT.h"
 
 #include <TSystem.h>
 #include <TStyle.h>
@@ -103,7 +105,7 @@ char mumuMassWindow[5][300] = {
 	  || (Mumumass < 3.686109+3*Mumumasserr && Mumumass > 3.686109-3*Mumumasserr)",  // Only JPsi && Psi(2S)
 	" Mumumass < 3.096916+3*Mumumasserr && Mumumass > 3.096916-5*Mumumasserr",  // Only JPsi
 	" Mumumass < 3.686109+3*Mumumasserr && Mumumass > 3.686109-3*Mumumasserr"}; //Only Psi(2S)
-double genAfb[9]={0.00, 0.07, -0.02, -0.03, -0.01, -0.09, 0.02, 0.02, -0.01};
+double genAfb[9]={0.00, 0.07, -0.02, -0.03, -0.01, -0.09, 0.02, 0.02, -0.01};   // LHCb results.....
 double genFh [9]={0.00, 0.14,  0.04,  0.11,  0.08,  0.14, 0.14, 0.05,  0.02};
 std::string f_accXrecoEff_ord0[8] = {
     "76.637435*((exp(-0.5*((CosThetaL-(-0.001125))/0.421561)**2)*(-0.027922*CosThetaL**2-0.000022*CosThetaL+0.026002))*(0.010083-0.000846*CosThetaK+0.014753*CosThetaK**2-0.001424*CosThetaK**3-0.013006*CosThetaK**4-0.001910*CosThetaK**5-0.003559*CosThetaK**6))",
@@ -357,8 +359,8 @@ std::vector<double> angular_gen_bin(int iBin, const char outfile[] = "angular_ge
 {//{{{
 	RooRealVar genCosThetaL("genCosThetaL", "cos#theta_{L}", -1., 1.);
 	RooRealVar genQ2("genQ2","q^{2}",1.0,22.);
-	RooRealVar fh("fh", "F_{H}", genFh[iBin], 0.0, 0.9);
-	RooRealVar afb("afb", "A_{FB}", genAfb[iBin], -0.3, 0.5);
+	RooRealVar fh("fh", "F_{H}", genFh[iBin], 0., 1.);
+	RooRealVar afb("afb", "A_{FB}", genAfb[iBin], -1., 1.);
 	
 	RooRealVar nsig("nsig","nsig",1E6,1E2,1E9);
 //	RooRealVar nbkg("nbkg","nbkg",10,0.1,1E4);
@@ -367,7 +369,8 @@ std::vector<double> angular_gen_bin(int iBin, const char outfile[] = "angular_ge
 	RooExtendPdf f("f","",f_sig,nsig);
 	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(genCosThetaL,genQ2),genQ2range[iBin],0);
 	
-	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
+//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
+	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(1));
 	
 //	Draw the frame on the canvas
 	TCanvas* c = new TCanvas("c");
@@ -415,6 +418,9 @@ std::vector<double> angular_gen_bin(int iBin, const char outfile[] = "angular_ge
 	writeParam(iBin, "genfh", val);
 	val[0] = afb.getVal();val[1] = afb.getError();
 	writeParam(iBin, "genafb",val);
+	
+	printf("genAfb[%d]=%6.4f +- %6.4f\n", iBin, readParam(iBin,"genafb",0), fabs(readParam(iBin,"genafb",1)));
+	printf("genFh [%d]=%6.4f +- %6.4f\n", iBin, readParam(iBin,"genfh",0),  fabs(readParam(iBin,"genfh",1)));
 
 //	write output
 	std::vector<double> output;
@@ -426,51 +432,28 @@ std::vector<double> angular_gen_bin(int iBin, const char outfile[] = "angular_ge
 
 }//}}}
 
-void angular_gen(const char outfile[] = "angular_gen")
+void angular_gen( const char outfile[] = "angular_gen")
 {//{{{
-//	bool refit = false; // Turn to true if you want to fit again.
-	bool refit = true; // Turn to true if you want to fit again.
-	
+
 	double x[9]   ={1.50, 3.15, 6.49,  11.475,  15.09, 17.0, 20.0, 3.5, 11.5};
 	double xerr[9]={0.5, 1.15, 2.09,   1.385,   0.91,  1.0,  2.0, 2.5, 10.5};
 	double yfh[9], yerrfh[9], yafb[9], yerrafb[9]; 
-/*	double x[8]={1.5,3.15,6.49,9.385,11.475,13.52,15.09,17.5};
- 	double xerr[8]={0.5,1.15,2.09,0.705,1.385,0.66,0.91,1.5};
-	double yfh[8]       ={0.705,0.791,0.649,0.524,0.454,0.399,0.369,0.341};
-	double yerrfh[8]    ={0.000565,0.000410,0.000273,0.000428,0.000296,0.000413,0.000367,0.000359};
-	double yafb[8]      ={-0.160,-0.066,0.182,0.317,0.374,0.412,0.421,0.376};
-	double yerrafb[8]   ={0.000432,0.000284,0.000224,0.000390,0.000286,0.000419,0.000393,0.420};
-*/
-   if (refit){ // Turn to true if you want to fit again.
-		std::vector<double> vbin;
-		for(int ibin = 0, i = 0; i < 11; i++){
-			if (i == 3 || i == 5) continue;
-			vbin = angular_gen_bin(i);
-			yfh[ibin]       =vbin.at(0);
-			yerrfh[ibin]    =vbin.at(1);
-			yafb[ibin]      =vbin.at(2);
-			yerrafb[ibin]   =vbin.at(3);
-			ibin++;
-		}
-	}
+			
 //	Check input data
-	for(int ibin = 0, i = 0; i < 11; i++){
-		if (i == 3 || i == 5) continue;
-		printf("  yafb[%d]=%12.6f +- %12.6f     ",ibin,yafb[ibin],yerrafb[ibin]);
-		printf("yfh[%d]=%12.6f +- %12.6f\n",ibin,yfh[ibin],yerrfh[ibin]);
-		printf("genAfb[%d]=%12.6f      >>>>>>     ",ibin,genAfb[ibin]);
-		printf("genFh[%d]=%12.6f\n",ibin,genFh[ibin]);
-		ibin++;
+	for(int i = 0, ibin = 0; i < 9, ibin < 11; i++, ibin++){
+		if (i == 3) ibin++;
+		if (i == 4) ibin++;
+		yafb[i]     = readParam(ibin,"genafb",0);
+		yerrafb[i]  = fabs(readParam(ibin,"genafb",1));
+		yfh[i]      = readParam(ibin,"genfh",0);
+		yerrfh[i]   = fabs(readParam(ibin,"genfh",1));
+		printf("genAfb[%d] =%12.6f +- %12.6f     ",i,yafb[i],yerrafb[i]);
+		printf("genFh[%d]  =%12.6f +- %12.6f\n",i,yfh[i],yerrfh[i]);
 	}
-
 //	plotting
 	TCanvas *c = new TCanvas();
 	TH1F *frame = new TH1F("frame","",22,0.,22);
-//	TH2F *frame = new TH2F("frame","",18,1,19,10,-0.5,1);
 	frame->SetStats(kFALSE);
-	frame->SetXTitle("q^{2} [(GeV)^{2}]");
-	frame->SetYTitle("F_{H}");
-	frame->SetAxisRange(-0.02,0.16,"Y");
 	frame->GetYaxis()->SetLabelFont(22);
 	frame->GetYaxis()->SetLabelSize(0.04);
 	frame->GetYaxis()->SetTitleSize(0.04);
@@ -481,11 +464,15 @@ void angular_gen(const char outfile[] = "angular_gen")
 	frame->GetXaxis()->SetTitleSize(0.04);
 	frame->GetXaxis()->SetTitleOffset(1.15);
 	frame->GetXaxis()->SetTitleFont(22);
+//	Fh
+	frame->SetTitle("");
+	frame->SetXTitle("q^{2} [(GeV)^{2}]");
+	frame->SetYTitle("F_{H}");
+	frame->SetAxisRange(-0.02,0.08,"Y");
 	frame->Draw();
 	TGraphAsymmErrors *g_fh  = new TGraphAsymmErrors(7,x,yfh,xerr,xerr,yerrfh,yerrfh);
 	g_fh->SetMarkerColor(4);
 	g_fh->SetMarkerStyle(20);
-	
 	g_fh->SetFillColor(2);
 	g_fh->SetFillStyle(3001);
 	g_fh->Draw("2");
@@ -493,35 +480,26 @@ void angular_gen(const char outfile[] = "angular_gen")
 //	c->Print(TString::Format("./plots/%s_fh.pdf",outfile));
 	c->Print(TString::Format("./plots/%s_fh.png",outfile));
 	c->Clear();
-	
+//	Afb	
 	frame->SetTitle("");
 	frame->SetYTitle("A_{FB}");
 	frame->SetXTitle("q^{2} [(GeV)^{2}]");
-	frame->SetAxisRange(-0.04,0.04,"Y");
-	frame->GetYaxis()->SetLabelFont(22);
-	frame->GetYaxis()->SetLabelSize(0.04);
-	frame->GetYaxis()->SetTitleSize(0.04);
-	frame->GetYaxis()->SetTitleOffset(1.2);
-	frame->GetYaxis()->SetTitleFont(22);
-	frame->GetXaxis()->SetLabelFont(22);
-	frame->GetXaxis()->SetLabelSize(0.04);
-	frame->GetXaxis()->SetTitleSize(0.04);
-	frame->GetXaxis()->SetTitleOffset(1.15);
-	frame->GetXaxis()->SetTitleFont(22);
+	frame->SetAxisRange(-0.02,0.02,"Y");
 	frame->Draw();
 	TGraphAsymmErrors *g_afb = new TGraphAsymmErrors(7,x,yafb,xerr,xerr,yerrafb,yerrafb);
 	g_afb->SetMarkerColor(4);
 	g_afb->SetMarkerStyle(20);
-	
 	g_afb->SetFillColor(2);
 	g_afb->SetFillStyle(3001);
 	g_afb->Draw("2");
 	g_afb->Draw("P");
 //	c->Print(TString::Format("./plots/%s_afb.pdf",outfile));
 	c->Print(TString::Format("./plots/%s_afb.png",outfile));
+	c->Clear();
+	c->Close();
 }//}}}
 ////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 //  04-09-2014
 //_________________________________________________________________________________
 //Fit parameters of acceptance and efficiency using RooFit.
@@ -847,7 +825,7 @@ std::vector<double> recoEff(int iBin) // reconstruction efficiency for check!
 	return output;
 }//}}}
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
+*/
 void createAccptanceHist() // create acceptance histogram from UNFILTERED GEN.
 {//{{{
 	double accUpperBound = 0.05;
@@ -917,7 +895,7 @@ void createAccptanceHist() // create acceptance histogram from UNFILTERED GEN.
 		h1_acc_fine [iBin]->SetXTitle("genCosThetaL");
 		h1_acc_fine [iBin]->SetYTitle("Acceptance");
 	}
-	
+
 //	Fill histograms
 	// Read data
 	for (int entry = 0; entry < treein->GetEntries(); entry++) {
@@ -1054,10 +1032,11 @@ void createAccptanceHist() // create acceptance histogram from UNFILTERED GEN.
 }//}}}
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-void accXrecoEff2(int iBin)
-//std::vector<double> accXrecoEff2(int iBin)
+void accXrecoEff(int iBin)
+//std::vector<double> accXrecoEff(int iBin)
 {//{{{
 //	TH1::SetDefaultSumw2();
+//	ROOT::Math::Minimizer::SetDefaultMaxFunctionCalls(10000);
 	printf("Evaluate reconstruction efficiency for bin#%d\n",iBin);
 	double effUpperBound[11]  = {0.5e-3, 0.5e-3, 0.5e-3, 0.5e-3, 0.5e-3, 0.5e-3, 0.8e-3, 1.5e-3, 2.0e-3, 0.5e-3, 0.5e-3};
 	double effUpperBound2[11] = {  0.18,   0.08,   0.04,   0.05,  0.035,   0.05,  0.035,   0.05,   0.06,   0.06,   0.04};
@@ -1183,57 +1162,29 @@ void accXrecoEff2(int iBin)
 			printf("INFO: Efficiency_fine(%d)=%f +- %f.\n",i,h2_eff_fine.GetBinContent(i),h2_eff_fine.GetBinError(i));
 		}
 	}
-/*	
-//	Quick check 0th order (decoupled)
-	TF1 *f_effL_ord0 = 0;
-	if (iBin < 1){
-		f_effL_ord0 = new TF1("f_effL_ord0","exp(-0.5*((x-[0])/[1])**2)*([2]*x**2+[3]*x+[4])",-1,1);//x
-		f_effL_ord0->SetParameter(1,1.);
-	}else{
-		f_effL_ord0 = new TF1("f_effL_ord0","pol6",-1,1);//x
-	}
-	h2_eff_fine.Fit("f_effL_ord0","S");
-*/
-
-//	Use Legendre polynomial for better convergance
-//	1,x,(3x^2-1)/2,(5x^3-3x)/2,(35x^4-30x^2+3)/8
-//	TString f2_model_format_ord0 = TString::Format("(exp(-0.5*((x-(%f))/%f)**2)*(%f*x**2%+f*x%+f))*(%f%+f*y%+f*y**2%+f*y**3%+f*y**4%+f*y**5%+f*y**6)",f_effL_ord0->GetParameter(0),f_effL_ord0->GetParameter(1),f_effL_ord0->GetParameter(2),f_effL_ord0->GetParameter(3),f_effL_ord0->GetParameter(4),f_effK_ord0->GetParameter(0),f_effK_ord0->GetParameter(1),f_effK_ord0->GetParameter(2),f_effK_ord0->GetParameter(3),f_effK_ord0->GetParameter(4),f_effK_ord0->GetParameter(5),f_effK_ord0->GetParameter(6));
-//	TString f1_model_format_ord0 = TString::Format("(exp(-0.5*((x-(%f))/%f)**2)*(%f*x**2%+f*x%+f))*(%f%+f*y%+f*y**2%+f*y**3%+f*y**4%+f*y**5%+f*y**6)",f_effL_ord0->GetParameter(0),f_effL_ord0->GetParameter(1),f_effL_ord0->GetParameter(2),f_effL_ord0->GetParameter(3),f_effL_ord0->GetParameter(4),f_effK_ord0->GetParameter(0),f_effK_ord0->GetParameter(1),f_effK_ord0->GetParameter(2),f_effK_ord0->GetParameter(3),f_effK_ord0->GetParameter(4),f_effK_ord0->GetParameter(5),f_effK_ord0->GetParameter(6));
-//	if (iBin > 0) f2_model_format_ord0 = TString::Format("(%f%+f*x%+f*x**2%+f*x**3%+f*x**4%+f*x**5%+f*x**6)*(%f%+f*y%+f*y**2%+f*y**3%+f*y**4%+f*y**5%+f*y**6)",f_effL_ord0->GetParameter(0),f_effL_ord0->GetParameter(1),f_effL_ord0->GetParameter(2),f_effL_ord0->GetParameter(3),f_effL_ord0->GetParameter(4),f_effL_ord0->GetParameter(5),f_effL_ord0->GetParameter(6),f_effK_ord0->GetParameter(0),f_effK_ord0->GetParameter(1),f_effK_ord0->GetParameter(2),f_effK_ord0->GetParameter(3),f_effK_ord0->GetParameter(4),f_effK_ord0->GetParameter(5),f_effK_ord0->GetParameter(6));
-//	printf("%s\n",f2_model_format_ord0.Data());
-//	TString f2_model_format_ord1 = "([0]+[1]*y+[2]*(3*y**2-1)/2+[3]*(5*y**3-3*y)/2)+([4]+[5]*y+[6]*(3*y**2-1)/2+[7]*(5*y**3-3*y)/2)*x**2+([8]+[9]*y+[10]*(3*y**2-1)/2+[11]*(5*y**3-3*y)/2)*x**3+([12]+[13]*y+[14]*(3*y**2-1)/2+[15]*(5*y**3-3*y)/2)*x**4+([16]+[17]*y+[18]*(3*y**2-1)/2+[19]*(5*y**3-3*y)/2)*x**6";
-//	
-//
-//	TString f1_model_format_0 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8.";
-//	TString f1_model_format_1 = "[0]+[1]*x+[2]*(3*x**2-1)/2+[3]*(5*x**3-3*x)/2";
 	TString f1_model_format_1 ;
 	TString f1_model_format_2 ;
 	if (iBin == 0 || iBin ==1 || iBin == 9 ) { 
-		f1_model_format_1 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8. + [6]*(231*x**6-315*x**4+105*x**2-5)/16."; 
-	//	f1_model_format_2 = "( [0]*exp(-0.5*((x-[1])/[2])**2) ) * ( [3]+[4]*x+[5]*(3*x**2-1)/2.+[6]*(5*x**3-3*x)/2.+[7]*(35*x**4-30*x**2+3)/8.+[8]*(63*x**5-70*x**3+15*x)/8. +[9]*(231*x**6-315*x**4+105*x**2-5)/16. )";
+//	if (iBin == 0 || iBin ==2 || iBin == 4 || iBin == 8 ) { 
+		f1_model_format_1 = "[0]+[1]*x+[2]*x**2+[3]*x**3+[4]*x**4+[5]*x**5+[6]*x**6"; 
+	//	f1_model_format_1 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8. + [6]*(231*x**6-315*x**4+105*x**2-5)/16."; 
 		f1_model_format_2 = "( [0]*exp(-0.5*((x-[1])/[2])**2) ) * ( [3]+[4]*x+[5]*x**2+[6]*x**3+[7]*x**4+[8]*x**5+[9]*x**6 ) ";
 	//	f1_model_format_2 = "( [0]*exp(-0.5*((x-[1])/[2])**2) ) * ( [3]+[4]*x+[5]*(3*x**2-1)/2.+[6]*(5*x**3-3*x)/2.+[7]*(35*x**4-30*x**2+3)/8.+[8]*(63*x**5-70*x**3+15*x)/8. +[9]*(231*x**6-315*x**4+105*x**2-5)/16. )";
 	//	f1_model_format_2 = "( ([0]*exp(-0.5*((x-[1])/[2])**2) ) + ([3]*exp(-0.5*((x-[4])/[5])**2)) + ( [6]*exp(-0.5*((x-[7])/[8])**2)) ) + [9]";
-	//	f1_model_format_2 = "( ([10]+ [0]*exp(-0.5*((x-[1])/[2])**2) ) + ([3]*exp(-0.5*((x-[4])/[5])**2)) + ( [6]*exp(-0.5*((x-[7])/[8])**2)) ) + [9]";
 	}
 	if (iBin ==20 ) { 
 		f1_model_format_1 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8. + [6]*(231*x**6-315*x**4+105*x**2-5)/16."; 
 	//	f1_model_format_1 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8. + [6]*x**6"; 
 	//	f1_model_format_2 = "( [0] + [1]*exp(-0.5*((x-[2])/[3])^2) ) * ( [4]+[5]*x+[6]*(3*x**2-1)/2.+[7]*(5*x**3-3*x)/2.+[8]*(35*x**4-30*x**2+3)/8.+[9]*(63*x**5-70*x**3+15*x)/8. +[10]*(231*x**6-315*x**4+105*x**2-5)/16.)";
 		f1_model_format_2 = "( ( [0]*exp(-0.5*((x-[1])/[2])**2) ) + ([3]*exp(-0.5*((x-[4])/[5])**2)) + ( [6]*exp(-0.5*((x-[7])/[8])**2)) ) + [9]";
-	//	f1_model_format_2 = "( ([10]+ [0]*exp(-0.5*((x-[1])/[2])**2) ) + ([3]*exp(-0.5*((x-[4])/[5])**2)) + ( [6]*exp(-0.5*((x-[7])/[8])**2)) ) + [9]";
 	}else { 
 		f1_model_format_1 = "[0]+[1]*x+[2]*x**2+[3]*x**3+[4]*x**4+[5]*x**5+[6]*x**6"; 
 		f1_model_format_2 = "( [0]*exp(-0.5*((x-[1])/[2])**2) ) * ( [3]+[4]*x+[5]*x**2+[6]*x**3+[7]*x**4+[8]*x**5+[9]*x**6 ) ";
-	//	f1_model_format_2 = "( [10]+[0]*exp(-0.5*((x-[1])/[2])**2) ) * ( [3]+[4]*x+[5]*x**2+[6]*x**3+[7]*x**4+[8]*x**5+[9]*x**6 ) ";
 	}
-//	TString f1_model_format_3 = "[0]+[1]*x+[2]*(3*x**2-1)/2+[3]*(5*x**3-3*x)/2+[4]*x**4+[5]*x**5+[6]*x**6+[7]*x**7";
-//	TString f1_model_format_4 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.";
 //	TString f1_model_format_5 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8.";
 //	TString f1_model_format_6 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8.+[6]*(231*x**6-315*x**4+105*x**2-5)/16.";
 //	TString f1_model_format_7 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8.+[6]*(231*x**6-315*x**4+105*x**2-5)/16.+[7]*(427*x**7-693*x**5+315*x**3-35*x)/16.";
 //	TString f1_model_format_8 = "[0]+[1]*x+[2]*(3*x**2-1)/2.+[3]*(5*x**3-3*x)/2.+[4]*(35*x**4-30*x**2+3)/8.+[5]*(63*x**5-70*x**3+15*x)/8.+[6]*(231*x**6-315*x**4+105*x**2-5)/16.+[7]*(427*x**7-693*x**5+315*x**3-35*x)/16.+[8]*(6435*x**8-12012*x**6+6930*x**4-1260*x**2+35)/128.+[9]*(12155*x**9-25740*x**7+18010*x**5-4620*x**3+315*x)/128.";
-//	TString f1_model_format_G = "([0]+[1]*x+[2]*(3*x**2-1)/2+[3]*(5*x**3-3*x)/2)*[4]*TMath::Gaus(x,[5],[6])+[7]";
 //	Draw
 	TCanvas canvas("canvas");
 	TLatex *latex = new TLatex();
@@ -1241,7 +1192,7 @@ void accXrecoEff2(int iBin)
 //	fcn_binnedChi2_2D(nPar, 0, chi2Val, arrPar, 0);
 //	printf("Chi2(Bin center)=%f \n",chi2Val);
 
-//	Draw 1-D
+//	Draw #events in acceptance
 	h2_nacc_fine.Draw();
 	h2_nacc_fine.SetLabelFont(22,"XY");
 	h2_nacc_fine.SetLabelSize(0.04,"XY");
@@ -1251,18 +1202,19 @@ void accXrecoEff2(int iBin)
 //	canvas.Print(TString::Format("./plots/accXrecoEff_naccL_fine_bin%d.pdf",iBin));
 	canvas.Print(TString::Format("./plots/accXrecoEff_naccL_fine_bin%d.png",iBin));
 	
+//	Draw #events pass all cuts
 	h2_nreco_fine.Draw();
+	h2_nreco_fine.SetLabelFont(22,"XY");
+	h2_nreco_fine.SetLabelSize(0.04,"XY");
+	h2_nreco_fine.SetTitleSize(0.04,"XY");
+	h2_nreco_fine.SetTitleFont(22,"XY");
 	canvas.Update();
 //	canvas.Print(TString::Format("./plots/accXrecoEff_nrecoL_fine_bin%d.pdf",iBin));
 	canvas.Print(TString::Format("./plots/accXrecoEff_nrecoL_fine_bin%d.png",iBin));
 
-//	Draw FitResult
+//	Draw FitResult for recoEfficiency
 	double up_r , dn_r ;
 	up_r = 1.; dn_r = -1.;
-//	if (iBin == 0) {up_r = 0.85; dn_r = -0.85; }
-//	if (iBin == 0) {up_r = 0.90; dn_r = -0.90; }
-//	else if (iBin ==1 || iBin == 4 || iBin == 6 || iBin == 9) { up_r = 0.95; dn_r = -0.95;}
-//	else {up_r = 1.; dn_r = -1.; }
 	const int nPar_r = 7;
 	TF1 *f1_model_r = new TF1 ("f1_model_r", f1_model_format_1, dn_r, up_r);
 	f1_model_r->SetParameter(0,0.);
@@ -1273,23 +1225,20 @@ void accXrecoEff2(int iBin)
 	f1_model_r->SetParameter(5,0.01);
 	f1_model_r->SetParameter(6,0.01);  // f1_model_format_1
 		
-	h2_reco_fine.Fit(f1_model_r,"R"); //// 09-09
+	h2_reco_fine.Fit(f1_model_r,"R"); 
 	
 	f1_model_r->SetTitle("");
-	f1_model_r->SetMaximum(effUpperBound[iBin]); //03-11
+	f1_model_r->SetMaximum(effUpperBound[iBin]); 
 	f1_model_r->SetLineWidth(1);
-//	f1_model_r->SetRange(-0.89,0.79);
-//	if (iBin == 1) f1_model_r->SetRange(-0.89,0.89);
 	f1_model_r->SetLineColor(2);
 	f1_model_r->Draw(" SAME ");
 	
 	h2_reco_fine.SetMinimum(0.);
 	h2_reco_fine.SetTitleOffset(1.3,"XY");
-	h2_reco_fine.SetXTitle("genCosThetaL");
+	h2_reco_fine.SetXTitle("CosThetaL");
 	h2_reco_fine.SetYTitle("recoEfficiency");
 	h2_reco_fine.SetStats(0);
 	h2_reco_fine.SetMaximum(effUpperBound2[iBin]);
-//	if (iBin == 0) h2_reco_fine.SetMaximum(0.01);
 	h2_reco_fine.Draw("PE1");
 	latex->DrawLatexNDC(0.35,0.95,TString::Format("#varepsilon in Bin%d",iBin));
 	h2_reco_fine.Draw();
@@ -1300,7 +1249,8 @@ void accXrecoEff2(int iBin)
 	canvas.Update();
 //	canvas.Print(TString::Format("./plots/accXrecoEff_recoL_fine_bin%d.pdf",iBin));
 	canvas.Print(TString::Format("./plots/accXrecoEff_recoL_fine_bin%d.png",iBin));
-//	Draw compare
+
+//	Save fitting results
 	double chi2Val_r=0;
 	double arrPar_r[nPar_r], arrParErr_r[nPar_r];
 	for (int iPar = 0; iPar < nPar_r; iPar++) {
@@ -1319,10 +1269,8 @@ void accXrecoEff2(int iBin)
 		printf("%18.15f,",output_r[i+1]);
 		if (i+2 >= output_r.size()) printf("\n");
 	}
-//	return output_r;
 	writeParam(iBin,"reco",   arrPar_r,   nPar_r);  // f1_model_format_2
 	writeParam(iBin,"recoErr",arrParErr_r,nPar_r);  // f1_model_format_2
-//	return output_r.c_str();	
 /*
 	TH1F h_theoL("h_theoL" ,"h_theoL" ,nLBins,-1,1); 
 	h_theoL.SetStats(0);
@@ -1339,7 +1287,7 @@ void accXrecoEff2(int iBin)
 	}
 	h_theoL.Draw();
 	canvas.Update();
-	canvas.Print(TString::Format("./plots/accXrecoEff2_theoL_bin%d.pdf",iBin));
+	canvas.Print(TString::Format("./plots/accXrecoEff_theoL_bin%d.pdf",iBin));
 */	
 //	Draw efficiency
 //	h2_eff.SetMinimum(0.);
@@ -1352,54 +1300,36 @@ void accXrecoEff2(int iBin)
 //	latex->DrawLatexNDC(0.35,0.95,TString::Format("#varepsilon in Bin%d",iBin));
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-//	Draw FitResult
+//	Draw FitResult for Total Efficiency
+	ROOT::Math::MinimizerOptions::SetDefaultMaxFunctionCalls(100000);
 	double up , dn ;
 	up = 1.; dn = -1.;
-//	if (iBin == 0) {up = 0.79; dn = -0.79;}   // 19-09
-//	if (iBin == 0) {up = 0.85; dn = -0.85; }
-//	if (iBin == 0) {up = 0.90; dn = -0.90;}
-//	else if (iBin ==1 || iBin == 4 || iBin == 6 || iBin == 9) { up = 0.95; dn = -0.95;}
-//	else if (iBin ==1 || iBin ==9) { up = 0.85; dn = -0.85;}
-//	else {up = 1.; dn = -1.;}
 	const int nPar = 10;
-//	TF1 f1_model("f1_model", f1_model_format_0, dn, up);
-//	TF1 f1_model("f1_model", f1_model_format_1, dn, up);
-//	TF1 f1_model("f1_model", f1_model_format_2, dn, up);
-//	TF1 f1_model("f1_model", f1_model_format_3, dn, up);
-//	TF1 f1_model("f1_model", f1_model_format_4, dn, up);
-//	TF1 f1_model("f1_model", f1_model_format_5, dn, up);
-//	TF1 f1_model("f1_model", f1_model_format_6, dn, up);
 //	TF1 f1_model("f1_model", f1_model_format_7, dn, up);
 	TF1 *f1_model = new TF1("f1_model", f1_model_format_2, dn, up);
-//	TF1 f1_model("f1_model", f1_model_format_G, dn, up);
-//	f1_model->SetParameter(0,0.);
-//	f1_model->SetParameter(1,0.01);
-	f1_model->SetParameter(2,1);
-//	f1_model->SetParameter(3,10.);  // f1_model_format_1
-//	f1_model->SetParameter(4,0.001);  // f1_model_format_2  // f1_model_format_4
-	f1_model->SetParameter(5,1);  // f1_model_format_2  // f1_model_format_5 
-//	f1_model->SetParameter(6,0.6);  // f1_model_format_2  // f1_model_format_6
-//	f1_model->SetParameter(7,5);  // f1_model_format_3  // f1_model_format_7 // f1_model_format_G
-	f1_model->SetParameter(8,1);  // f1_model_format_8
-	if (iBin == 0 || iBin == 1 || iBin == 9 ) {
-//	f1_model->FixParameter(9,0);  // f1_model_format_8
-//	f1_model->SetParameter(9,0);  // f1_model_format_8
+	f1_model->SetParameter(0, readParam(iBin,"acc", 1));
+	f1_model->SetParameter(1, readParam(iBin,"acc", 2));
+	f1_model->SetParameter(2, readParam(iBin,"acc", 3));
+	f1_model->SetParameter(3, readParam(iBin,"reco", 0));
+	f1_model->SetParameter(4, readParam(iBin,"reco", 1));
+	f1_model->SetParameter(5, readParam(iBin,"reco", 2));
+	f1_model->SetParameter(6, readParam(iBin,"reco", 3));
+	f1_model->SetParameter(7, readParam(iBin,"reco", 4));
+	f1_model->SetParameter(8, readParam(iBin,"reco", 5));
+	f1_model->SetParameter(9, readParam(iBin,"reco", 6));
+	if ( iBin != 2 && iBin != 4 && iBin != 7 ) {
+		f1_model->FixParameter(0, readParam(iBin,"acc", 1));
+		f1_model->FixParameter(1, readParam(iBin,"acc", 2));
+		f1_model->FixParameter(2, readParam(iBin,"acc", 3));
+		f1_model->FixParameter(3, readParam(iBin,"reco", 0));
+		f1_model->FixParameter(4, readParam(iBin,"reco", 1));
+		f1_model->FixParameter(5, readParam(iBin,"reco", 2));
+		f1_model->FixParameter(6, readParam(iBin,"reco", 3));
+		f1_model->FixParameter(7, readParam(iBin,"reco", 4));
+		f1_model->FixParameter(8, readParam(iBin,"reco", 5));
+		f1_model->FixParameter(9, readParam(iBin,"reco", 6));
 	}
-//	f1_model->FixParameter(10,0);   // f1_model_format_2
 
-//	h2_eff.Fit(f1_model,"R"); //// 09-09
-//	
-//	f1_model->SetTitle("");
-//	f1_model->SetMaximum(effUpperBound[iBin]);  //03-11
-//	f1_model->SetLineColor(2);
-//	f1_model->SetLineWidth(1);
-//	f1_model->Draw(" SAME ");
-	
-/////////////////////////////////////////////////////////////	
-//	canvas.Update();
-//	canvas.Print(TString::Format("./plots/accXrecoEff2_Eff_bin%d.pdf",iBin));
-//	canvas.Print(TString::Format("./plots/accXrecoEff2_Eff_bin%d.png",iBin));
-	
 	h2_eff_fine.SetStats(0);
 	h2_eff_fine.SetMinimum(0.);
 	h2_eff_fine.SetTitleOffset(1.3,"XY");
@@ -1412,41 +1342,27 @@ void accXrecoEff2(int iBin)
 	h2_eff_fine.SetLabelSize(0.04,"XY");
 	h2_eff_fine.SetTitleSize(0.04,"XY");
 	h2_eff_fine.SetTitleFont(22,"XY");
-//	canvas.Update();
-//	canvas.Print(TString::Format("./plots/accXrecoEff2_Eff_fine_bin%d.pdf",iBin));
-/////////////////////////////////////////////////////////////////////////////////////////
 	
-//	Draw FitResult
-//	TF1 f1_model("f1_model", f1_model_format, -1., 1.);
-//	f1_model->SetParameter(0,0.01);
-//	f1_model->SetParameter(1,0.01);
-//	f1_model->SetParameter(2,0.01);
-//	f1_model->SetParameter(3,0.01); // f1_model_format_1
-//	f1_model->SetParameter(4,0.01);  // f1_model_format_2  // f1_model_format_4
-//	f1_model->SetParameter(5,0.01);  // f1_model_format_2  // f1_model_format_5 
-//	f1_model->SetParameter(6,0.01);  // f1_model_format_2  // f1_model_format_6
-//	f1_model->SetParameter(7,0.01);  // f1_model_format_3  // f1_model_format_7 // f1_model_format_G
-
-//	h2_eff_fine.Fit("f1_model"); //// 09-09
+//	f1_model->SetDefaultMaxFunctionCalls(10000);
+//	ROOT::Math::MinimizerOptions::SetDefaultErrorDef(10000);
+//	h2_eff_fine.Fit(f1_model,"WL S R"); //// 09-09
 	h2_eff_fine.Fit(f1_model,"R"); //// 09-09
+//	TFitResultPtr r = h2_eff_fine.Fit(f1_model,"WL S R");
+//	r->Print();
 	
 	f1_model->SetTitle("");
 	f1_model->SetMaximum(effUpperBound[iBin]); //03-11
 	f1_model->SetLineWidth(1);
-//	f1_model->SetRange(-0.89,0.79);
-//	if (iBin == 1) f1_model->SetRange(-0.89,0.89);
 	f1_model->SetLineColor(2);
 	f1_model->Draw(" SAME ");
 	
-////////////////////////////////////////////////////////////////////
 	canvas.Update();
 //	canvas.Print(TString::Format("./plots/accXrecoEff_Eff_fine_bin%d.pdf",iBin));
 	canvas.Print(TString::Format("./plots/accXrecoEff_Eff_fine_bin%d.png",iBin));
 /////////////////////////////////////////////////////////////////////////////////////////////////
 	
-//	Draw compare
+//	Save Fitting results
 	double chi2Val=0;
-//	const int nPar = 6;
 	double arrPar[nPar], arrParErr[nPar];
 	for (int iPar = 0; iPar < nPar; iPar++) {
 		arrPar[iPar]    = f1_model->GetParameter(iPar);
@@ -1486,8 +1402,8 @@ void accXrecoEff2(int iBin)
 	latex->DrawLatexNDC(0.01,0.95,TString::Format("#chi^{2} = %f",chi2Val));
 	latex->DrawLatexNDC(0.3,0.95,TString::Format("#varepsilon_{fit} / #varepsilon_{measured} in Bin%d",iBin));
 	canvas.Update();
-//	canvas.Print(TString::Format("./plots/accXrecoEff2_compFit_bin%d.pdf",iBin));
-	canvas.Print(TString::Format("./plots/accXrecoEff2_compFit_bin%d.png",iBin));
+//	canvas.Print(TString::Format("./plots/accXrecoEff_compFit_bin%d.pdf",iBin));
+	canvas.Print(TString::Format("./plots/accXrecoEff_compFit_bin%d.png",iBin));
 	
 	h2_pullFit.SetStats(0);
 	h2_pullFit.Draw(" HIST TEXT");
@@ -1499,8 +1415,8 @@ void accXrecoEff2(int iBin)
 	latex->DrawLatexNDC(0.01,0.95,TString::Format("#chi^{2} = %f",chi2Val));
 	latex->DrawLatexNDC(0.3,0.95,TString::Format("(#varepsilon_{fit} - #varepsilon_{measured})/Error in Bin%d",iBin));
 	canvas.Update();
-//	canvas.Print(TString::Format("./plots/accXrecoEff2_pullFit_bin%d.pdf",iBin));
-	canvas.Print(TString::Format("./plots/accXrecoEff2_pullFit_bin%d.png",iBin));
+//	canvas.Print(TString::Format("./plots/accXrecoEff_pullFit_bin%d.pdf",iBin));
+	canvas.Print(TString::Format("./plots/accXrecoEff_pullFit_bin%d.png",iBin));
 	
 //	Draw significance of deviation
 	TH1F h2_pull("Deviation/Error","",15,-3.,3.);
@@ -1519,11 +1435,10 @@ void accXrecoEff2(int iBin)
 	h2_pull.SetTitleSize(0.04,"XY");
 	h2_pull.SetTitleFont(22,"XY");
 	canvas.Update();
-//	canvas.Print(TString::Format("./plots/accXrecoEff2_sigma_bin%d.pdf",iBin));
-	canvas.Print(TString::Format("./plots/accXrecoEff2_sigma_bin%d.png",iBin));
+//	canvas.Print(TString::Format("./plots/accXrecoEff_sigma_bin%d.pdf",iBin));
+	canvas.Print(TString::Format("./plots/accXrecoEff_sigma_bin%d.png",iBin));
 		
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//	Draw projection to cosThetaK
 	delete latex;
 	
 	std::vector<double> output;
@@ -1539,32 +1454,19 @@ void accXrecoEff2(int iBin)
 		if (i+2 >= output.size()) printf("\n");
 	}
 //	return output;
-	
-/*	
-//	prepare output
-	string output;
-	output = TString::Format("%f*(%s)",arrPar[20],f1_model_format_ord0.Data());
-//	output = TString::Format("%f*(%s)+(%f%+f*y%+f*(3*y**2-1)/2%+f*(5*y**3-3*y)/2)+(%f%+f*y%+f*(3*y**2-1)/2%+f*(5*y**3-3*y)/2)*x**2+(%f%+f*y%+f*(3*y**2-1)/2%+f*(5*y**3-3*y)/2)*x**3+(%f%+f*y%+f*(3*y**2-1)/2%+f*(5*y**3-3*y)/2)*x**4+(%f%+f*y%+f*(3*y**2-1)/2%+f*(5*y**3-3*y)/2)*x**6",arrPar[20],f2_model_format_ord0.Data(),arrPar[0],arrPar[1],arrPar[2],arrPar[3],arrPar[4],arrPar[5],arrPar[6],arrPar[7],arrPar[8],arrPar[9],arrPar[10],arrPar[11],arrPar[12],arrPar[13],arrPar[14],arrPar[15],arrPar[16],arrPar[17],arrPar[18],arrPar[19]);
-//	printf("\"%s\",\n",output.c_str());
-*/
-	writeParam(iBin,"accXrecoEff2",   arrPar,   nPar);  // f1_model_format_2
-	writeParam(iBin,"accXrecoEff2Err",arrParErr,nPar);  // f1_model_format_2
+	writeParam(iBin,"accXrecoEff",   arrPar,   nPar);  // f1_model_format_2
+	writeParam(iBin,"accXrecoEffErr",arrParErr,nPar);  // f1_model_format_2
 //	return output.c_str();	
 }//}}}
 
 std::vector<double> angular_reco_bin(int iBin, const char outfile[] = "angular_reco")
 {//{{{
 	double up , dn ;
-//	if (iBin == 9) {up = 0.85; dn = -0.85;}
-//	if (iBin == 0 ) {up = 0.85; dn = -0.85;}
-//	if (iBin == 0) {up = 0.90; dn = -0.90;} 
-	if (iBin == 0) {up = 0.80; dn = -0.80;} // 19-09
-//	else if (iBin == 1) {up = 0.95; dn = -0.85;} // 19-09
-	else if (iBin == 9) { up = 0.95; dn = -0.95;}
-	else if (iBin == 1) { up = 0.85; dn = -0.85;}
-//	else if (iBin == 9) { up = 0.89; dn = -0.89;}
-	else { up = 1.; dn = -1.;}
-//	up = 1., dn = -1.;
+//	if (iBin == 0) {up = 0.80; dn = -0.80;} // 19-09
+//	else if (iBin == 1) { up = 0.85; dn = -0.85;}
+//	else if (iBin == 9) { up = 0.95; dn = -0.95;}
+//	else { up = 1.; dn = -1.;}
+	up = 1., dn = -1.;
 	RooRealVar CosThetaL("CosThetaL", "cos#theta_{L}", dn, up);
 	RooRealVar Q2("Q2","q^{2}",1.0,22.);
 	RooRealVar fh("fh", "F_{H}", genFh[iBin], 0., 1.);
@@ -1572,7 +1474,8 @@ std::vector<double> angular_reco_bin(int iBin, const char outfile[] = "angular_r
 	
 	RooRealVar nsig("nsig","nsig",1E6,1E1,1E9);
 //	RooRealVar nbkg("nbkg","nbkg",10,0.1,1E4);
-/*	
+	
+/////////////////////////////////////////////////////////  Acc X Reco  ///////////////////////////////////////
 //	Acceptance
 	RooRealVar accP0("accP0","accP0",readParam(iBin,"acc", 0));
 	RooRealVar accP1("accP1","accP1",readParam(iBin,"acc", 1));
@@ -1597,399 +1500,248 @@ std::vector<double> angular_reco_bin(int iBin, const char outfile[] = "angular_r
 	recoP4.setError(readParam(iBin,"recoErr", 4));  // f1_model_format_2  // f1_model_format_4
 	recoP5.setError(readParam(iBin,"recoErr", 5));  // f1_model_format_2  // f1_model_format_5 
 	recoP6.setError(readParam(iBin,"recoErr", 6));  // f1_model_format_2  // f1_model_format_6
-*/
+/////////////////////////////////////////////////////////  Acc X Reco  ///////////////////////////////////////
+
+/////////////////////////////////////////////////////////  Total Efficiency  ///////////////////////////////////////
+//	Total Efficiency
+	RooRealVar effP0("effP0","effP0",readParam(iBin,"accXrecoEff", 0));
+	RooRealVar effP1("effP1","effP1",readParam(iBin,"accXrecoEff", 1));
+	RooRealVar effP2("effP2","effP2",readParam(iBin,"accXrecoEff", 2));
+	RooRealVar effP3("effP3","effP3",readParam(iBin,"accXrecoEff", 3));   // f1_model_format_1
+	RooRealVar effP4("effP4","effP4",readParam(iBin,"accXrecoEff", 4));   // f1_model_format_2  // f1_model_format_4
+	RooRealVar effP5("effP5","effP5",readParam(iBin,"accXrecoEff", 5));   // f1_model_format_2  // f1_model_format_5  
+	RooRealVar effP6("effP6","effP6",readParam(iBin,"accXrecoEff", 6));   // f1_model_format_2  // f1_model_format_6
+	RooRealVar effP7("effP7","effP7",readParam(iBin,"accXrecoEff", 7));   // f1_model_format_3  // f1_model_format_7
+	RooRealVar effP8("effP8","effP8",readParam(iBin,"accXrecoEff", 8));   // f1_model_format_8
+	RooRealVar effP9("effP9","effP9",readParam(iBin,"accXrecoEff", 9));   // f1_model_format_8
+//	RooRealVar effP10("effP10","effP10",readParam(iBin,"accXrecoEff", 10));   // f1_model_format_2
+	effP0.setError(readParam(iBin,"accXrecoEffErr", 0));
+	effP1.setError(readParam(iBin,"accXrecoEffErr", 1));
+	effP2.setError(readParam(iBin,"accXrecoEffErr", 2));
+	effP3.setError(readParam(iBin,"accXrecoEffErr", 3));  // f1_model_format_1
+	effP4.setError(readParam(iBin,"accXrecoEffErr", 4));  // f1_model_format_2  // f1_model_format_4
+	effP5.setError(readParam(iBin,"accXrecoEffErr", 5));  // f1_model_format_2  // f1_model_format_5 
+	effP6.setError(readParam(iBin,"accXrecoEffErr", 6));  // f1_model_format_2  // f1_model_format_6
+	effP7.setError(readParam(iBin,"accXrecoEffErr", 7));  // f1_model_format_3  // f1_model_format_7
+	effP8.setError(readParam(iBin,"accXrecoEffErr", 8));  // f1_model_format_8
+	effP9.setError(readParam(iBin,"accXrecoEffErr", 9));  // f1_model_format_8
+//	effP10.setError(readParam(iBin,"accXrecoEffErr", 10));  // f1_model_format_2
+
+//	RooArgSet f_effA_argset(CosThetaL);
+//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4, effP5, effP6, effP7));
+//	f_effA_argset.add(RooArgSet(effP8, effP9));      // f1_model_format8_
+/////////////////////////////////////////////////////////  Total Efficiency  ///////////////////////////////////////
+	
+/////////////////////////////////////////////////////////  Acc X Reco  ///////////////////////////////////////
 //	RooArgSet f_accA_argset(CosThetaL);
-//	f_accA_argset.add(RooArgSet(accP0, accP1, accP2, accP3, accP4));
+//	f_accA_argset.add(RooArgSet(accP0, accP1, accP2, accP3));
 //	RooArgSet f_recoA_argset(CosThetaL);
 //	f_recoA_argset.add(RooArgSet(recoP0, recoP1, recoP2, recoP3, recoP4, recoP5, recoP6));
-
-//	Efficiency
-	RooRealVar effP0("effP0","effP0",readParam(iBin,"accXrecoEff2", 0));
-	RooRealVar effP1("effP1","effP1",readParam(iBin,"accXrecoEff2", 1));
-	RooRealVar effP2("effP2","effP2",readParam(iBin,"accXrecoEff2", 2));
-	RooRealVar effP3("effP3","effP3",readParam(iBin,"accXrecoEff2", 3));   // f1_model_format_1
-	RooRealVar effP4("effP4","effP4",readParam(iBin,"accXrecoEff2", 4));   // f1_model_format_2  // f1_model_format_4
-	RooRealVar effP5("effP5","effP5",readParam(iBin,"accXrecoEff2", 5));   // f1_model_format_2  // f1_model_format_5  
-	RooRealVar effP6("effP6","effP6",readParam(iBin,"accXrecoEff2", 6));   // f1_model_format_2  // f1_model_format_6
-	RooRealVar effP7("effP7","effP7",readParam(iBin,"accXrecoEff2", 7));   // f1_model_format_3  // f1_model_format_7
-	RooRealVar effP8("effP8","effP8",readParam(iBin,"accXrecoEff2", 8));   // f1_model_format_8
-	RooRealVar effP9("effP9","effP9",readParam(iBin,"accXrecoEff2", 9));   // f1_model_format_8
-//	RooRealVar effP10("effP10","effP10",readParam(iBin,"accXrecoEff2", 10));   // f1_model_format_2
-	effP0.setError(readParam(iBin,"accXrecoEff2Err", 0));
-	effP1.setError(readParam(iBin,"accXrecoEff2Err", 1));
-	effP2.setError(readParam(iBin,"accXrecoEff2Err", 2));
-	effP3.setError(readParam(iBin,"accXrecoEff2Err", 3));  // f1_model_format_1
-	effP4.setError(readParam(iBin,"accXrecoEff2Err", 4));  // f1_model_format_2  // f1_model_format_4
-	effP5.setError(readParam(iBin,"accXrecoEff2Err", 5));  // f1_model_format_2  // f1_model_format_5 
-	effP6.setError(readParam(iBin,"accXrecoEff2Err", 6));  // f1_model_format_2  // f1_model_format_6
-	effP7.setError(readParam(iBin,"accXrecoEff2Err", 7));  // f1_model_format_3  // f1_model_format_7
-	effP8.setError(readParam(iBin,"accXrecoEff2Err", 8));  // f1_model_format_8
-	effP9.setError(readParam(iBin,"accXrecoEff2Err", 9));  // f1_model_format_8
-//	effP10.setError(readParam(iBin,"accXrecoEff2Err", 10));  // f1_model_format_2
-
-	RooArgSet f_effA_argset(CosThetaL);
-//	f_sigA_argset.add(RooArgSet(fh,afb));
-//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2));              // f1_model_format_0
-//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3));       // f1_model_format_1
-//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4, effP5, effP6));       // f1_model_format_2
-//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4, effP5, effP6, effP7));       // f1_model_format_3 // f1_model_format_7
-	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4, effP5, effP6, effP7));
-	f_effA_argset.add(RooArgSet(effP8, effP9));      // f1_model_format8_
-//	f_effA_argset.add(RooArgSet(effP10));      // f1_model_format8_
-//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4));       // f1_model_format_4
-//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4, effP5));       // f1_model_format_5  
-//	f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4, effP5, effP6));       // f1_model_format_6
-//	TString f_sigA_format;
-//	TString f_ang_format = "effP0 + effP1 * CosThetaL + effP2 * CosThetaL**2";
-//	RooGenericPdf f_sigA("f_sigA", f_sigA_format, f_sigA_argset);
-//
-//
-//	RooGenericPdf f_eff("f_eff", "effP0 + effP1 * CosThetaL + effP2 * CosThetaL**2", f_effA_argset);     // f1_model_format_0
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2", f_effA_argset); // f1_model_format_1
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*CosThetaL**4+effP5*CosThetaL**5+effP6*CosThetaL**6", f_effA_argset); // f1_model_format_2
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*CosThetaL**4+effP5*CosThetaL**5+effP6*CosThetaL**6+effP7*CosThetaL**7", f_effA_argset); // f1_model_format_3
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*(35*CosThetaL**4-30*CosThetaL**2+3)/8.", f_effA_argset); // f1_model_format_4
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP5*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.", f_effA_argset); // f1_model_format_5
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP5*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP6*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16.", f_effA_argset); // f1_model_format_6
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP5*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP6*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16.+effP7*(429*CosThetaL**7-693*CosThetaL**5+315*CosThetaL**3-35*CosThetaL)/16.", f_effA_argset); // f1_model_format_7
-//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP5*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP6*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16.+effP7*(429*CosThetaL**7-693*CosThetaL**5+315*CosThetaL**3-35*CosThetaL)/16.+effP8*(6435*CosThetaL**8-12012*CosThetaL**6+6930*CosThetaL**4-1260*CosThetaL**2+35)/128.+effP9*(12155*CosThetaL**9-25740*CosThetaL**7+18010*CosThetaL**5-4620*CosThetaL**3+315*CosThetaL)/128.", f_effA_argset); // f1_model_format_8
-//	RooGenericPdf f_eff("f_eff", "( effP0+effP1*CosThetaL+effP2*CosThetaL**2+effP3*CosThetaL**3+effP4*CosThetaL**4+effP5*CosThetaL**5+effP6*CosThetaL**6 ) * ( effP7 + effP8*exp(-0.5*((CosThetaL-effP9)/effP10)^2) )", f_effA_argset); // f1_model_format_2
-//	RooGenericPdf f_eff("f_eff", "(effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2)*effP4*TMath::Gaus(CosThetaL,effP5,effP6)+effP7", f_effA_argset); // f1_model_format_G
-   /////////////////////////////////////////////////////  11-23-2014 ///////////////////////////////////////
-/*
-	RooGenericPdf f_acc("f_acc", "accP0 + accP1 * CosThetaL + accP2 * CosThetaL**2 + accP3 * CosThetaL**3 + accP4 * CosThetaL**4", f_accA_argset);     // f1_model_format_0
-	RooGenericPdf f_reco("f_reco", "recoP0 + recoP1 * CosThetaL + recoP2 * CosThetaL**2 + recoP3 * CosThetaL**3 + recoP4 * CosThetaL**4 + recoP5 * CosThetaL**5 + recoP6 * CosThetaL**6", f_recoA_argset);     // f1_model_format_0
-	RooGenericPdf f_sig("f_sig", "0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL", RooArgSet(CosThetaL,fh,afb));
-//	RooGenericPdf f_sig("f_sig", "0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL", RooArgSet(CosThetaL,fh,afb),TString::Format("fabs(%s) <= (%s)/2.",afb,fh);
 	
-	RooProdPdf    f_eff("f_eff","", f_acc, f_reco);
-//	RooProdPdf    f_effXsig("f_effXsig","", f_acc, f_reco, f_sig);
-	RooProdPdf    f_effXsig("f_effXsig","", f_eff, f_sig); /////////////////////////////////////////////////
-*/	
-//	RooArgSet f_effA_argset(CosThetaL);
-	f_effA_argset.add(RooArgSet(fh,afb));
-//	f_effA_argset.add(RooArgSet(accP0, accP1, accP2, accP3, accP4));
-//	f_effA_argset.add(RooArgSet(recoP0, recoP1, recoP2, recoP3, recoP4, recoP5, recoP6));
+//	RooGenericPdf f_acc("f_acc", "accP0 + accP1 *exp(-0.5*((CosThetaL-accP2)/accP3)^2) ", f_accA_argset);     // f1_model_format_0
+//	RooGenericPdf f_reco("f_reco", "recoP0 + recoP1 * CosThetaL + recoP2 * CosThetaL**2 + recoP3 * CosThetaL**3 + recoP4 * CosThetaL**4 + recoP5 * CosThetaL**5 + recoP6 * CosThetaL**6", f_recoA_argset);     // f1_model_format_0
+//	RooGenericPdf f_sigA("f_sig", "0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL", RooArgSet(CosThetaL,fh,afb));
+//	//RooGenericPdf f_sig("f_sig", "0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL", RooArgSet(CosThetaL,fh,afb),TString::Format("fabs(%s) <= (%s)/2.",afb,fh);
+	
+//	RooProdPdf    f_eff("f_eff","", f_acc, f_reco);
+//	//RooProdPdf    f_effXsig("f_effXsig","", f_acc, f_reco, f_sig);
+//	RooProdPdf    f_sig("f_effXsig","", f_eff, f_sigA); 
+//	RooExtendPdf  f("f","", f_sig, nsig);
+/////////////////////////////////////////////////////////  Acc X Reco  ///////////////////////////////////////
 
-//	////////////////////////////////////////////////////////////////////////////////////////////////////
-	if (iBin == 0 || iBin ==1 || iBin == 9 ) { 
+/////////////	For bin 0, 1, 9 ////////////////////////////////////////////////////////////////////////
+//	if (iBin == 0 || iBin ==1 || iBin == 9 ) { 
+//	if (iBin == 0 || iBin ==1 || iBin == 9 || iBin ==2 || iBin == 4 || iBin == 7 ) { 
+	if (iBin == 2 || iBin == 4 || iBin == 7 ) { 
+		RooArgSet f_effA_argset(CosThetaL, fh, afb);
+		f_effA_argset.add(RooArgSet(effP0, effP1, effP2, effP3, effP4, effP5, effP6, effP7));
+		f_effA_argset.add(RooArgSet(effP8, effP9));      // f1_model_format8_
+	//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * (( effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) + ( effP3*exp(-0.5*((CosThetaL-effP4)/effP5)**2)) + ( effP6*exp(-0.5*((CosThetaL-effP7)/effP8)**2) ) + effP9)", f_effA_argset); 
+	//	RooGenericPdf f_eff("f_eff", "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP5*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP6*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16.+effP7*(429*CosThetaL**7-693*CosThetaL**5+315*CosThetaL**3-35*CosThetaL)/16.", f_effA_argset); // f1_model_format_7
 	//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) *( effP0 + effP1*exp(-0.5*((CosThetaL-effP2)/effP3)^2) ) * (effP4+effP5*CosThetaL+effP6*(3*CosThetaL**2-1)/2+effP7*(5*CosThetaL**3-3*CosThetaL)/2+effP8*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP9*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP10*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16. )", f_effA_argset); 
 	//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) *( effP0 *exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) * (effP3+effP4*CosThetaL+effP5*(3*CosThetaL**2-1)/2+effP6*(5*CosThetaL**3-3*CosThetaL)/2+effP7*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP8*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP9*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16. )", f_effA_argset); 
 		RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * (effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) * ( effP3+effP4*CosThetaL+effP5*CosThetaL**2+effP6*CosThetaL**3+effP7*CosThetaL**4+effP8*CosThetaL**5+effP9*CosThetaL**6 ) ", f_effA_argset);
-	//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * (( effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) + ( effP3*exp(-0.5*((CosThetaL-effP4)/effP5)**2)) + ( effP6*exp(-0.5*((CosThetaL-effP7)/effP8)**2) ) + effP9)", f_effA_argset); 
 		RooExtendPdf  f("f","", f_sig, nsig);
-	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),Q2range[iBin],0);    // 12-08
-//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
-//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Hesse(0),Minos(1),Strategy(2));
-//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(2));
-	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(1));
-//	Draw the frame on the canvas
-	TCanvas* c = new TCanvas("c");
-	TLatex *t1 = new TLatex();
-	t1->SetNDC();
-	double fixNDC = -0.;
-	double UpperBound[11] ={300,700,1400,0.,1000,0.,800,1000,1200,1600,6000};
-	
-	RooPlot* framecosl = CosThetaL.frame(); 
-//	data->plotOn(framecosl,Binning(100)); 
-	data->plotOn(framecosl,Binning(85)); 
-	f.plotOn(framecosl); 
-	
-	framecosl->SetTitle("");
-	framecosl->SetMinimum(0);
-	framecosl->SetMaximum(UpperBound[iBin]);  //11-03
-	framecosl->Draw();
-	framecosl->GetYaxis()->SetLabelFont(22);
-	framecosl->GetYaxis()->SetLabelSize(0.04);
-	framecosl->GetYaxis()->SetTitleSize(0.04);
-	framecosl->GetYaxis()->SetTitleOffset(1.2);
-	framecosl->GetYaxis()->SetTitleFont(22);
-	framecosl->GetXaxis()->SetLabelFont(22);
-	framecosl->GetXaxis()->SetLabelSize(0.04);
-	framecosl->GetXaxis()->SetTitleSize(0.04);
-	framecosl->GetXaxis()->SetTitleOffset(1.15);
-	framecosl->GetXaxis()->SetTitleFont(22);
-	
-//	fixNDC = -0.5;
-//	if (iBin > 4) fixNDC = 0.;
-	t1->DrawLatex(.30,.85+fixNDC,TString::Format("%s",Q2range[iBin]));
-	t1->DrawLatex(.10,.79+fixNDC,TString::Format("F_{H}  =%9.5f #pm%9.5f",fh.getVal(),fh.getError()));
-	t1->DrawLatex(.50,.79+fixNDC,TString::Format("A_{FB} =%9.5f #pm%9.5f",afb.getVal(),afb.getError()));
-	c->Update();
-//	c->Print(TString::Format("./plots/%s_cosl_bin%d.pdf",outfile,iBin));
-	c->Print(TString::Format("./plots/%s_cosl_bin%d.png",outfile,iBin));
-	
-//	clear
-	delete t1;
-	delete c;
-	delete data;
-	
-//	write output
-	// write output
-	double val[3]={0,0,0};
-	val[0] = fh.getVal();val[1] = fh.getError();
-	writeParam(iBin, "recofh", val);
-	val[0] = afb.getVal();val[1] = afb.getError();
-	writeParam(iBin, "recoafb",val);
-	std::vector<double> output;
-	output.push_back(fh.getVal());
-	output.push_back(fh.getError());
-	output.push_back(afb.getVal());
-	output.push_back(afb.getError());
-	return output;
-	}
-/////////////////////////////////////////////////////////////////////////////////////////	
-	if (iBin == 20 ) { 
-	//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) *( effP0 + effP1*exp(-0.5*((CosThetaL-effP2)/effP3)^2) ) * (effP4+effP5*CosThetaL+effP6*(3*CosThetaL**2-1)/2+effP7*(5*CosThetaL**3-3*CosThetaL)/2+effP8*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP9*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP10*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16. )", f_effA_argset); 
-	//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) *( effP0 *exp(-0.5*((CosThetaL-effP1)/effP2)^2) ) * (effP3+effP4*CosThetaL+effP5*(3*CosThetaL**2-1)/2+effP6*(5*CosThetaL**3-3*CosThetaL)/2+effP7*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP8*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP9*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16. )", f_effA_argset); 
-		RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * (( effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) + ( effP3*exp(-0.5*((CosThetaL-effP4)/effP5)**2)) + ( effP6*exp(-0.5*((CosThetaL-effP7)/effP8)**2) ) + effP9)", f_effA_argset); 
-		RooExtendPdf  f("f","", f_sig, nsig);
-	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),Q2range[iBin],0);    // 12-08
-	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
-//	Draw the frame on the canvas
-	TCanvas* c = new TCanvas("c");
-	TLatex *t1 = new TLatex();
-	t1->SetNDC();
-	double fixNDC = -0.;
-	double UpperBound[11] ={300,700,1400,0.,1000,0.,800,1000,1200,1400,6000};
-	
-	RooPlot* framecosl = CosThetaL.frame(); 
-	data->plotOn(framecosl,Binning(100)); 
-	f.plotOn(framecosl); 
-	
-	framecosl->SetTitle("");
-	framecosl->SetMinimum(0);
-	framecosl->SetMaximum(UpperBound[iBin]);  //11-03
-	framecosl->Draw();
-	framecosl->GetYaxis()->SetLabelFont(22);
-	framecosl->GetYaxis()->SetLabelSize(0.04);
-	framecosl->GetYaxis()->SetTitleSize(0.04);
-	framecosl->GetYaxis()->SetTitleOffset(1.2);
-	framecosl->GetYaxis()->SetTitleFont(22);
-	framecosl->GetXaxis()->SetLabelFont(22);
-	framecosl->GetXaxis()->SetLabelSize(0.04);
-	framecosl->GetXaxis()->SetTitleSize(0.04);
-	framecosl->GetXaxis()->SetTitleOffset(1.15);
-	framecosl->GetXaxis()->SetTitleFont(22);
-	
-//	fixNDC = -0.5;
-//	if (iBin > 4) fixNDC = 0.;
-	t1->DrawLatex(.30,.85+fixNDC,TString::Format("%s",Q2range[iBin]));
-	t1->DrawLatex(.10,.79+fixNDC,TString::Format("F_{H}  =%9.5f #pm%9.5f",fh.getVal(),fh.getError()));
-	t1->DrawLatex(.50,.79+fixNDC,TString::Format("A_{FB} =%9.5f #pm%9.5f",afb.getVal(),afb.getError()));
-	c->Update();
-//	c->Print(TString::Format("./plots/%s_cosl_bin%d.pdf",outfile,iBin));
-	c->Print(TString::Format("./plots/%s_cosl_bin%d.png",outfile,iBin));
-	
-//	clear
-	delete t1;
-	delete c;
-	delete data;
-	
-//	write output
-	// write output
-	double val[3]={0,0,0};
-	val[0] = fh.getVal();val[1] = fh.getError();
-	writeParam(iBin, "recofh", val);
-	val[0] = afb.getVal();val[1] = afb.getError();
-	writeParam(iBin, "recoafb",val);
-	std::vector<double> output;
-	output.push_back(fh.getVal());
-	output.push_back(fh.getError());
-	output.push_back(afb.getVal());
-	output.push_back(afb.getError());
-	return output;
-	}
-////////////////////////////////////////////////////////////////////////////////////////////////////////		
-	if (iBin != 0 && iBin !=1 && iBin != 9) { 
-		RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * (effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) * ( effP3+effP4*CosThetaL+effP5*CosThetaL**2+effP6*CosThetaL**3+effP7*CosThetaL**4+effP8*CosThetaL**5+effP9*CosThetaL**6 ) ", f_effA_argset);
-		RooExtendPdf  f("f","", f_sig, nsig);
-	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),Q2range[iBin],0);    // 12-08
-//	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),TString::Format("(%s) && (%s)",Q2range[iBin],Selection[1]),0);    ////// 12-08
-//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
-	if (iBin == 2) {
+		RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),Q2range[iBin],0);    // 12-08
+	//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
+	//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Hesse(0),Minos(1),Strategy(2));
+	//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(2));
 		RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(1));
-	//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE));
+	//	Draw the frame on the canvas
+		TCanvas* c = new TCanvas("c");
+		TLatex *t1 = new TLatex();
+		t1->SetNDC();
+		double fixNDC = -0.;
+		double UpperBound[11] ={350,800,1400,0.,1000,0.,800,1000,1200,1600,6000};
+		
+		RooPlot* framecosl = CosThetaL.frame(); 
+		data->plotOn(framecosl,Binning(100)); 
+	//	data->plotOn(framecosl,Binning(85)); 
+		f.plotOn(framecosl); 
+		framecosl->SetTitle("");
+		framecosl->SetMinimum(0);
+		framecosl->SetMaximum(UpperBound[iBin]);  //11-03
+		framecosl->Draw();
+		framecosl->GetYaxis()->SetLabelFont(22);
+		framecosl->GetYaxis()->SetLabelSize(0.04);
+		framecosl->GetYaxis()->SetTitleSize(0.04);
+		framecosl->GetYaxis()->SetTitleOffset(1.2);
+		framecosl->GetYaxis()->SetTitleFont(22);
+		framecosl->GetXaxis()->SetLabelFont(22);
+		framecosl->GetXaxis()->SetLabelSize(0.04);
+		framecosl->GetXaxis()->SetTitleSize(0.04);
+		framecosl->GetXaxis()->SetTitleOffset(1.15);
+		framecosl->GetXaxis()->SetTitleFont(22);
+		
+	//	fixNDC = -0.5;
+	//	if (iBin > 4) fixNDC = 0.;
+		if (iBin == 10) { 
+			t1->DrawLatex(.30,.85+fixNDC,TString::Format(" Total Signal Region"));
+		} else t1->DrawLatex(.30,.85+fixNDC,TString::Format("%s",Q2range[iBin]));
+		t1->DrawLatex(.10,.79+fixNDC,TString::Format("F_{H}  =%9.5f #pm%9.5f",fh.getVal(),fh.getError()));
+		t1->DrawLatex(.50,.79+fixNDC,TString::Format("A_{FB} =%9.5f #pm%9.5f",afb.getVal(),afb.getError()));
+		c->Update();
+	//	c->Print(TString::Format("./plots/%s_cosl_bin%d.pdf",outfile,iBin));
+		c->Print(TString::Format("./plots/%s_cosl_bin%d.png",outfile,iBin));
+	//	clear
+		delete t1;
+		delete c;
+		delete data;
+	//	write output
+		double val[3]={0,0,0};
+		val[0] = fh.getVal();val[1] = fh.getError();
+		writeParam(iBin, "recofh", val);
+		val[0] = afb.getVal();val[1] = afb.getError();
+		writeParam(iBin, "recoafb",val);
+		std::vector<double> output;
+		output.push_back(fh.getVal());
+		output.push_back(fh.getError());
+		output.push_back(afb.getVal());
+		output.push_back(afb.getError());
+		return output;
 	}
-	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(2));
-//	Draw the frame on the canvas
-	TCanvas* c = new TCanvas("c");
-	TLatex *t1 = new TLatex();
-	t1->SetNDC();
-	double fixNDC = -0.;
-	double UpperBound[11] ={300,700,1400,0.,1000,0.,800,1000,1200,1600,6000};
+//////////////////  For other bins  /////////////////////////////////////////////////////////////////////////////////		
+//	if (iBin != 0 && iBin !=1 && iBin != 9 ) { 
+//	if (iBin != 0 && iBin !=1 && iBin != 9 && iBin != 4 && iBin != 2 && iBin != 7) { 
+//	if (iBin != 0 && iBin != 4 && iBin != 2 && iBin != 7) { 
+	else { 
+		RooArgSet f_accA_argset(CosThetaL);
+		f_accA_argset.add(RooArgSet(accP0, accP1, accP2, accP3));
+		RooArgSet f_recoA_argset(CosThetaL);
+		f_recoA_argset.add(RooArgSet(recoP0, recoP1, recoP2, recoP3, recoP4, recoP5, recoP6));
+		RooGenericPdf f_acc("f_acc", "accP0 + accP1 *exp(-0.5*((CosThetaL-accP2)/accP3)^2) ", f_accA_argset);     // f1_model_format_0
+		RooGenericPdf f_reco("f_reco", "recoP0 + recoP1 * CosThetaL + recoP2 * CosThetaL**2 + recoP3 * CosThetaL**3 + recoP4 * CosThetaL**4 + recoP5 * CosThetaL**5 + recoP6 * CosThetaL**6", f_recoA_argset);     // f1_model_format_0
+		RooGenericPdf f_sigA("f_sig", "0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL", RooArgSet(CosThetaL,fh,afb));
+		//	RooGenericPdf f_sig("f_sig", "0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL", RooArgSet(CosThetaL,fh,afb),TString::Format("fabs(%s) <= (%s)/2.",afb,fh);
+		RooProdPdf    f_eff("f_eff","", f_acc, f_reco);
+		RooProdPdf    f_sig("f_effXsig","", f_eff, f_sigA); 
+		RooExtendPdf  f("f","", f_sig, nsig);
+	//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * (effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) * ( effP3+effP4*CosThetaL+effP5*CosThetaL**2+effP6*CosThetaL**3+effP7*CosThetaL**4+effP8*CosThetaL**5+effP9*CosThetaL**6 ) ", f_effA_argset);
+	//	RooExtendPdf  f("f","", f_sig, nsig);
+		RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),Q2range[iBin],0);    // 12-08
+	//	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),TString::Format("(%s) && (%s)",Q2range[iBin],Selection[1]),0);    ////// 12-08
+	//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
+		RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(2));
+	//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(1));
+		if ( iBin == 0 || iBin == 9 ) {
+			RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"),Minos(kTRUE),Strategy(1));
+		}
+	//	Draw the frame on the canvas
+		TCanvas* c = new TCanvas("c");
+		TLatex *t1 = new TLatex();
+		t1->SetNDC();
+		double fixNDC = -0.;
+		double UpperBound[11] ={350,800,1400,0.,1000,0.,800,1000,1200,1600,6000};
 	
-	RooPlot* framecosl = CosThetaL.frame(); 
-	data->plotOn(framecosl,Binning(100)); 
-	f.plotOn(framecosl); 
-	
-	framecosl->SetTitle("");
-	framecosl->SetMinimum(0);
-	framecosl->SetMaximum(UpperBound[iBin]);  //11-03
-	framecosl->Draw();
-	framecosl->GetYaxis()->SetLabelFont(22);
-	framecosl->GetYaxis()->SetLabelSize(0.04);
-	framecosl->GetYaxis()->SetTitleSize(0.04);
-	framecosl->GetYaxis()->SetTitleOffset(1.2);
-	framecosl->GetYaxis()->SetTitleFont(22);
-	framecosl->GetXaxis()->SetLabelFont(22);
-	framecosl->GetXaxis()->SetLabelSize(0.04);
-	framecosl->GetXaxis()->SetTitleSize(0.04);
-	framecosl->GetXaxis()->SetTitleOffset(1.15);
-	framecosl->GetXaxis()->SetTitleFont(22);
-	
-//	fixNDC = -0.5;
-//	if (iBin > 4) fixNDC = 0.;
-	if (iBin == 10) { 
-		t1->DrawLatex(.30,.85+fixNDC,TString::Format(" Total Signal Region"));
-	} else t1->DrawLatex(.30,.85+fixNDC,TString::Format("%s",Q2range[iBin]));
-	t1->DrawLatex(.10,.79+fixNDC,TString::Format("F_{H}  =%9.5f #pm%9.5f",fh.getVal(),fh.getError()));
-	t1->DrawLatex(.50,.79+fixNDC,TString::Format("A_{FB} =%9.5f #pm%9.5f",afb.getVal(),afb.getError()));
-	c->Update();
-//	c->Print(TString::Format("./plots/%s_cosl_bin%d.pdf",outfile,iBin));
-	c->Print(TString::Format("./plots/%s_cosl_bin%d.png",outfile,iBin));
-	
-//	clear
-	delete t1;
-	delete c;
-	delete data;
-	
-//	write output
-	// write output
-	double val[3]={0,0,0};
-	val[0] = fh.getVal();val[1] = fh.getError();
-	writeParam(iBin, "recofh", val);
-	val[0] = afb.getVal();val[1] = afb.getError();
-	writeParam(iBin, "recoafb",val);
-	std::vector<double> output;
-	output.push_back(fh.getVal());
-	output.push_back(fh.getError());
-	output.push_back(afb.getVal());
-	output.push_back(afb.getError());
-	return output;
+		RooPlot* framecosl = CosThetaL.frame(); 
+		data->plotOn(framecosl,Binning(100)); 
+	//	data->plotOn(framecosl,Binning(85)); 
+		f.plotOn(framecosl); 
+		framecosl->SetTitle("");
+		framecosl->SetMinimum(0);
+		framecosl->SetMaximum(UpperBound[iBin]);  //11-03
+		framecosl->Draw();
+		framecosl->GetYaxis()->SetLabelFont(22);
+		framecosl->GetYaxis()->SetLabelSize(0.04);
+		framecosl->GetYaxis()->SetTitleSize(0.04);
+		framecosl->GetYaxis()->SetTitleOffset(1.2);
+		framecosl->GetYaxis()->SetTitleFont(22);
+		framecosl->GetXaxis()->SetLabelFont(22);
+		framecosl->GetXaxis()->SetLabelSize(0.04);
+		framecosl->GetXaxis()->SetTitleSize(0.04);
+		framecosl->GetXaxis()->SetTitleOffset(1.15);
+		framecosl->GetXaxis()->SetTitleFont(22);
+		
+	//	fixNDC = -0.5;
+	//	if (iBin > 4) fixNDC = 0.;
+		if (iBin == 10) { 
+			t1->DrawLatex(.30,.85+fixNDC,TString::Format(" Total Signal Region"));
+		} else t1->DrawLatex(.30,.85+fixNDC,TString::Format("%s",Q2range[iBin]));
+		t1->DrawLatex(.10,.79+fixNDC,TString::Format("F_{H}  =%9.5f #pm%9.5f",fh.getVal(),fh.getError()));
+		t1->DrawLatex(.50,.79+fixNDC,TString::Format("A_{FB} =%9.5f #pm%9.5f",afb.getVal(),afb.getError()));
+		c->Update();
+	//	c->Print(TString::Format("./plots/%s_cosl_bin%d.pdf",outfile,iBin));
+		c->Print(TString::Format("./plots/%s_cosl_bin%d.png",outfile,iBin));
+	//	clear
+		delete t1;
+		delete c;
+		delete data;
+	//	write output
+		double val[3]={0,0,0};
+		val[0] = fh.getVal();val[1] = fh.getError();
+		writeParam(iBin, "recofh", val);
+		val[0] = afb.getVal();val[1] = afb.getError();
+		writeParam(iBin, "recoafb",val);
+		
+		std::vector<double> output;
+		output.push_back(fh.getVal());
+		output.push_back(fh.getError());
+		output.push_back(afb.getVal());
+		output.push_back(afb.getError());
+		return output;
 	}
-//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * ( accP0 + accP1 *exp(-0.5*((CosThetaL-accP2)/accP3^2)) + accP4 ) * ( recoP0 + recoP1 * CosThetaL + recoP2 * CosThetaL**2 + recoP3 * CosThetaL**3 + recoP4 * CosThetaL**4 + recoP5 * CosThetaL**5 + recoP6 * CosThetaL**6 )", f_effA_argset);
-//	RooGenericPdf f_sig("f_sig", "( 0.75*(1-fh)*(1-CosThetaL*CosThetaL) + 0.5*fh + afb*CosThetaL ) * ( accP0 + accP1 * CosThetaL + accP2 * CosThetaL**2 + accP3 * CosThetaL**3 + accP4 * CosThetaL**4 ) * ( recoP0 + recoP1 * CosThetaL + recoP2 * CosThetaL**2 + recoP3 * CosThetaL**3 + recoP4 * CosThetaL**4 + recoP5 * CosThetaL**5 + recoP6 * CosThetaL**6 )", f_effA_argset);
-//	RooExtendPdf  f("f","", f_sig, nsig);
 	
-	
-//	RooExtendPdf  f("f","", f_effXsig, nsig);
-//	RooRealVar nsig("nsig","nsig",1E4,1E2,1E8);
-//	RooExtendPdf f_ext("f_ext","f_ext",f_sigA,nsig);
-//	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(Q2, Mumumass, Mumumasserr, CosThetaL),TString::Format("(%s) && (%s)",Q2range[iBin],mumuMassWindow[1]),0);
-//	RooFitResult *f_fitresult = f_ext.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
-//	RooDataSet *data = new RooDataSet("data","data",ch,RooArgSet(CosThetaL,Q2),Q2range[iBin],0);
-//	RooFitResult *f_fitresult = f.fitTo(*data,Extended(kTRUE),Save(kTRUE),Minimizer("Minuit"));
-/*  ////////////////////////////////////////////////////////////////	
-//	Draw the frame on the canvas
-	TCanvas* c = new TCanvas("c");
-	TLatex *t1 = new TLatex();
-	t1->SetNDC();
-	double fixNDC = -0.;
-	double UpperBound[11] ={280,700,1400,0.,1000,0.,800,1000,1200,1400,7000};
-	
-	RooPlot* framecosl = CosThetaL.frame(); 
-	data->plotOn(framecosl,Binning(100)); 
-	f.plotOn(framecosl); 
-	
-	framecosl->SetTitle("");
-	framecosl->SetMinimum(0);
-	framecosl->SetMaximum(UpperBound[iBin]);  //11-03
-	framecosl->Draw();
-	
-//	fixNDC = -0.5;
-//	if (iBin > 4) fixNDC = 0.;
-	t1->DrawLatex(.30,.85+fixNDC,TString::Format("%s",Q2range[iBin]));
-	t1->DrawLatex(.10,.79+fixNDC,TString::Format("F_{H}  =%9.5f #pm%9.5f",fh.getVal(),fh.getError()));
-	t1->DrawLatex(.50,.79+fixNDC,TString::Format("A_{FB} =%9.5f #pm%9.5f",afb.getVal(),afb.getError()));
-	c->Update();
-	c->Print(TString::Format("./plots/%s_cosl_bin%d.pdf",outfile,iBin));
-	c->Print(TString::Format("./plots/%s_cosl_bin%d.png",outfile,iBin));
-	
-//	clear
-	delete t1;
-	delete c;
-	delete data;
-	
-//	write output
-	std::vector<double> output;
-	output.push_back(fh.getVal());
-	output.push_back(fh.getError());
-	output.push_back(afb.getVal());
-	output.push_back(afb.getError());
-	return output;
-*/ //////////////////////////////////////////////////////////////////////
+	printf("recoAfb[%d]=%6.4f +- %6.4f\n", iBin, readParam(iBin,"recoafb",0), fabs(readParam(iBin,"recoafb",1)));
+	printf("recoFh [%d]=%6.4f +- %6.4f\n", iBin, readParam(iBin,"recofh",0),  fabs(readParam(iBin,"recofh",1)));
 }//}}}
 
 void angular_reco(const char outfile[] = "angular_reco")
 {//{{{
 //	bool refit = false; // Turn to true if you want to fit again.
-	bool refit = true; // Turn to true if you want to fit again.
 	
 	double x[9]   ={1.50, 3.15, 6.49,  11.475,  15.09, 17.0, 20.0, 3.5, 11.5};
 	double xerr[9]={0.5, 1.15, 2.09,   1.385,   0.91,  1.0,  2.0, 2.5, 10.5};
+	double ygenfh[9], ygenuerrfh[9], ygenderrfh[9], ygenafb[9], ygenerrafb[9]; 
 	double yfh[9], yuerrfh[9], yderrfh[9], yafb[9], yerrafb[9]; 
-/*	double x[8]={1.5,3.15,6.49,9.385,11.475,13.52,15.09,17.5};
- 	double xerr[8]={0.5,1.15,2.09,0.705,1.385,0.66,0.91,1.5};
-	double yfh[8]       ={0.705,0.791,0.649,0.524,0.454,0.399,0.369,0.341};
-	double yerrfh[8]    ={0.000565,0.000410,0.000273,0.000428,0.000296,0.000413,0.000367,0.000359};
-	double yafb[8]      ={-0.160,-0.066,0.182,0.317,0.374,0.412,0.421,0.376};
-	double yerrafb[8]   ={0.000432,0.000284,0.000224,0.000390,0.000286,0.000419,0.000393,0.420};
-*/
-   /*if (refit){ // Turn to true if you want to fit again.
-		std::vector<double> vbin;
-		for(int ibin = 0, i = 0; i < 11; i++){
-			if (i == 3 || i == 5) continue;
-		//	if (i != 9) continue;
-			vbin = angular_reco_bin(i);
-			yfh[ibin]       =vbin.at(0);
-			yuerrfh[ibin]    =vbin.at(1);
-			if (yuerrfh[ibin] > yfh[ibin]) { yderrfh[ibin] = yfh[ibin];}
-			else yderrfh[ibin] = yuerrfh[ibin];
-			yafb[ibin]      =vbin.at(2);
-			yerrafb[ibin]   =vbin.at(3);
-			ibin++;
-		}
-	}
-	*/ ////////////////////////////// 01-07
-   if (refit){ // Turn to true if you want to fit again.
-		std::vector<double> vbin;
-		for(int ibin = 0, i = 0; i < 9, ibin < 11; i++, ibin++){
-			if (i == 3) ibin++; // i = 3, ibin = 4;
-			if (i == 4) ibin++; // i = 4, ibin = 6;
-			cout<<"iBin = "<<ibin<<endl;
-			vbin = angular_reco_bin(ibin);
-		//	if (ibin == 0 || ibin == 1 || ibin ==9) {vbin = angular_reco_bin(ibin);}
-			yafb[i]      = readParam(ibin,"recoafb",0);
-			yerrafb[i]  = fabs(readParam(ibin,"recoafb",1));
-			yfh[i]       = readParam(ibin,"recofh",0);
-			yuerrfh[i]   = fabs(readParam(ibin,"recofh",1));
-			if (yuerrfh[i] > fabs(yfh[i])) { yderrfh[i] = fabs(yfh[i]);}
-			else { yderrfh[i] = yuerrfh[i]; }
-			printf("yafb[%d]=%6.4f +- %6.4f\n",ibin,yafb[i],yerrafb[i]);
-			printf("yfh [%d]=%6.4f +- %6.4f\n",ibin,yfh[i],yuerrfh[i]);
-    }
-	}
-//	Check input data
-	/*for(int ibin = 0, i = 0; i < 11; i++){
-		if (i == 3 || i == 5) continue;
-		printf("  yafb[%d]=%12.6f +- %12.6f     ",ibin,yafb[ibin],yerrafb[ibin]);
-		printf("yfh[%d]=%12.6f +- %12.6f\n",ibin,yfh[ibin],yuerrfh[ibin]);
-		printf("genAfb[%d]=%6.4f      >>>>>>    ",ibin,genAfb[ibin]);
-		printf("genFh[%d]=%6.4f\n\n",ibin,genFh[ibin]);
-		ibin++;
-	}
-	*/
 
+//	Check input 
+	for(int i = 0, ibin = 0; i < 9, ibin < 11; i++, ibin++){
+		if (i == 3) ibin++;
+		if (i == 4) ibin++;
+		cout<<"iBin = "<<ibin<<endl;
+	//	reco
+		yafb[i]      = readParam(ibin,"recoafb",0);
+		yerrafb[i]  = fabs(readParam(ibin,"recoafb",1));
+		yfh[i]       = readParam(ibin,"recofh",0);
+		yuerrfh[i]   = fabs(readParam(ibin,"recofh",1));
+		if (yuerrfh[i] > fabs(yfh[i])) { yderrfh[i] = fabs(yfh[i]);}
+		else { yderrfh[i] = yuerrfh[i]; }
+		printf("recoAfb[%d]=%6.4f +- %6.4f\n",i,yafb[i],yerrafb[i]);
+		printf("recoFh [%d]=%6.4f +- %6.4f\n",i,yfh[i],yuerrfh[i]);
+	//	gen
+		ygenafb[i]      = readParam(ibin,"genafb",0);
+		ygenerrafb[i]  = fabs(readParam(ibin,"genafb",1));
+		ygenfh[i]       = readParam(ibin,"genfh",0);
+		ygenuerrfh[i]   = fabs(readParam(ibin,"genfh",1));
+		if (ygenuerrfh[i] > fabs(ygenfh[i])) { ygenderrfh[i] = fabs(ygenfh[i]);}
+		else { ygenderrfh[i] = ygenuerrfh[i]; }
+		printf("genAfb[%d]=%6.4f +- %6.4f\n",i,ygenafb[i],ygenerrafb[i]);
+		printf("genFh [%d]=%6.4f +- %6.4f\n",i,ygenfh[i],ygenuerrfh[i]);
+	}
 //	plotting
 	TCanvas *c = new TCanvas();
 	TH1F *frame = new TH1F("frame","",22,0.,22);
-//	TH2F *frame = new TH2F("frame","",18,1,19,10,-0.5,1);
 	frame->SetStats(kFALSE);
-	frame->SetXTitle("q^{2} [(GeV)^{2}]");
-	frame->SetYTitle("F_{H}");
-	frame->SetAxisRange(-0.02,0.42,"Y");  //11-03
-	frame->Draw();
 	frame->GetYaxis()->SetLabelFont(22);
 	frame->GetYaxis()->SetLabelSize(0.04);
 	frame->GetYaxis()->SetTitleSize(0.04);
@@ -2000,43 +1752,57 @@ void angular_reco(const char outfile[] = "angular_reco")
 	frame->GetXaxis()->SetTitleSize(0.04);
 	frame->GetXaxis()->SetTitleOffset(1.15);
 	frame->GetXaxis()->SetTitleFont(22);
+	frame->SetTitle("");
+	frame->Draw();
+//	reco
+	frame->SetXTitle("q^{2} [(GeV)^{2}]");
+	frame->SetYTitle("F_{H}");
+	frame->SetAxisRange(-0.02,0.08,"Y");  //11-03
 	TGraphAsymmErrors *g_fh  = new TGraphAsymmErrors(7,x,yfh,xerr,xerr,yderrfh,yuerrfh);
 	g_fh->SetMarkerColor(4);
-	g_fh->SetMarkerStyle(20);
-	
+	g_fh->SetMarkerStyle(20);	
 	g_fh->SetFillColor(2);
 	g_fh->SetFillStyle(3001);
 	g_fh->Draw("2");
 	g_fh->Draw("P");
 //	c->Print(TString::Format("./plots/%s_fh.pdf",outfile));
+	c->Print(TString::Format("./plots/%s_fh_reco.png",outfile));
+// reco and gen
+	TGraphAsymmErrors *gen_fh  = new TGraphAsymmErrors(7,x,ygenfh,xerr,xerr,ygenderrfh,ygenuerrfh);
+	gen_fh->SetMarkerColor(3);
+	gen_fh->SetMarkerStyle(24);
+	
+	gen_fh->SetFillColor(1);
+	gen_fh->SetFillStyle(3005);
+	gen_fh->Draw("2");
+	gen_fh->Draw("P");
 	c->Print(TString::Format("./plots/%s_fh.png",outfile));
 	c->Clear();
 	
-	frame->SetTitle("");
 	frame->SetYTitle("A_{FB}");
 	frame->SetXTitle("q^{2} [(GeV)^{2}]");
-	frame->SetAxisRange(-0.04,0.04,"Y"); //11-03
+	frame->SetAxisRange(-0.02,0.02,"Y"); //11-03
 	frame->Draw();
-	frame->GetYaxis()->SetLabelFont(22);
-	frame->GetYaxis()->SetLabelSize(0.04);
-	frame->GetYaxis()->SetTitleSize(0.04);
-	frame->GetYaxis()->SetTitleOffset(1.2);
-	frame->GetYaxis()->SetTitleFont(22);
-	frame->GetXaxis()->SetLabelFont(22);
-	frame->GetXaxis()->SetLabelSize(0.04);
-	frame->GetXaxis()->SetTitleSize(0.04);
-	frame->GetXaxis()->SetTitleOffset(1.15);
-	frame->GetXaxis()->SetTitleFont(22);
+//	reco
 	TGraphAsymmErrors *g_afb = new TGraphAsymmErrors(7,x,yafb,xerr,xerr,yerrafb,yerrafb);
 	g_afb->SetMarkerColor(4);
 	g_afb->SetMarkerStyle(20);
-	
 	g_afb->SetFillColor(2);
 	g_afb->SetFillStyle(3001);
 	g_afb->Draw("2");
 	g_afb->Draw("P");
 //	c->Print(TString::Format("./plots/%s_afb.pdf",outfile));
+	c->Print(TString::Format("./plots/%s_afb_reco.png",outfile));
+	TGraphAsymmErrors *gen_afb = new TGraphAsymmErrors(7,x,ygenafb,xerr,xerr,ygenerrafb,ygenerrafb);
+	gen_afb->SetMarkerColor(3);
+	gen_afb->SetMarkerStyle(24);
+	gen_afb->SetFillColor(1);
+	gen_afb->SetFillStyle(3005);
+	gen_afb->Draw("2");
+	gen_afb->Draw("P");
 	c->Print(TString::Format("./plots/%s_afb.png",outfile));
+	c->Clear();
+	c->Close();
 }//}}}
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2092,8 +1858,8 @@ void getToyFromUnfilterGen(int iBin)
         f2_model.SetParErrors(arrRecParErr2011[iBin]);
     }else{
         for (int i = 0; i < 20; i++) {
-            f2_model.SetParameter(i,readParam(iBin,"accXrecoEff2",i));
-            f2_model.SetParError(i,readParam(iBin,"accXrecoEff2Err",i));
+            f2_model.SetParameter(i,readParam(iBin,"accXrecoEff",i));
+            f2_model.SetParError(i,readParam(iBin,"accXrecoEffErr",i));
         }
     }
 
@@ -2236,8 +2002,8 @@ void angular2D_1a_Sm(int iBin, const char outfile[] = "angular2D_1a_Sm", bool ke
 void angular2D_1b_YpPm(int iBin, const char outfile[] = "angular2D_1b_YpPm", bool keepParam = true)
 {//{{{
 //	if (iBin ==0 || iBin%2 == 1 || iBin/2 > 3){    ///////////   Peaking bkg. Only for bin 2,4,6
-//	if (iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
-	if (iBin != 9 && iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
+	if (iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
+//	if (iBin != 9 && iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
 		if (keepParam){
 			double val[3]={1,0,0};
 			writeParam(iBin, "bkgGauss1_mean1", val);
@@ -2296,11 +2062,11 @@ void angular2D_1b_YpPm(int iBin, const char outfile[] = "angular2D_1b_YpPm", boo
 		//1 guassian ,2+2 deg. ploy
 		      f = new RooExtendPdf("f","f",f_bkgPeakM2,nbkgPeak);
 				break;
-		case 9:
+	/*	case 9:
 		//1 double guassian ,4+4 deg. ploy
 		      f = new RooExtendPdf("f","f",f_bkgPeakM1,nbkgPeak);
 				break;
-		case 10:
+	*/	case 10:
 		//2 double guassian ,4+4 deg. ploy
 				f = new RooExtendPdf("f","f",f_bkgPeakM12,nbkgPeak);
 				break;
@@ -2409,8 +2175,8 @@ void angular2D_2a_PkPl(int iBin, const char outfile[] = "angular2D_2a_PkPl", boo
 {//{{{
 	// Gaussian constraint on yields and mass is needed.
 //	if (iBin ==0 || iBin%2 == 1 || iBin/2 > 3) {    /////   Peaking bkg. CosThetaL...
-//	if (iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
-	if (iBin != 9 && iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
+	if (iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
+//	if (iBin != 9 && iBin != 10 && (iBin ==0 || iBin%2 == 1 || iBin/2 > 3)){    ///////////   Peaking bkg. Only for bin 2,4,6,9,10
 		// Pm is fhat(and the yield is 0) for bins other than 2,4,6
 		if (keepParam){
 			double val[3]={0,0,0};
@@ -2443,11 +2209,11 @@ void angular2D_2a_PkPl(int iBin, const char outfile[] = "angular2D_2a_PkPl", boo
 			//f_bkgPeakL_argset.add(RooArgSet(bkgPeakL_c1,bkgPeakL_c2));
 			f_bkgPeakL_argset.add(RooArgSet(bkgPeakL_c1,bkgPeakL_c2,bkgPeakL_c3,bkgPeakL_c4));
 			break;
-		case 9:
+	/*	case 9:
 		   //1 double guassian ,4+4 deg. ploy
 			f_bkgPeakL_argset.add(RooArgSet(bkgPeakL_c1,bkgPeakL_c2,bkgPeakL_c3,bkgPeakL_c4));
 			break;
-		case 10:
+	*/	case 10:
 		   //1 double guassian ,4+4 deg. ploy
 			f_bkgPeakL_argset.add(RooArgSet(bkgPeakL_c1,bkgPeakL_c2,bkgPeakL_c3,bkgPeakL_c4));
 			break;
@@ -2523,7 +2289,7 @@ void angular2D_prior(int iBin, const char outfile[] = "angular2D_prior", bool ke
 	RooRealVar bkgCombL_c2("bkgCombL_c2","c2",0.,-3.,3.);
 	RooRealVar bkgCombL_c3("bkgCombL_c3","c3",0.,-3.,3.);
 	RooRealVar bkgCombL_c4("bkgCombL_c4","c4",0.,-3.,3.);
-	RooRealVar bkgCombL_c5("bkgCombL_c5","c4",0.,-3.,3.);
+	RooRealVar bkgCombL_c5("bkgCombL_c5","c5",0.,-3.,3.);
 	RooArgSet f_bkgCombL_argset;
 	switch (iBin) {
      /*   case 7:
@@ -2623,11 +2389,19 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
 {//{{{
     // Remark: You must use RooFit!! It's better in unbinned fit.
     //         Extended ML fit is adopted by Mauro, just follow!!
-    // Need some modification for accXrecoEff2.
+    // Need some modification for accXrecoEff.
     
     cout<<"iBin = "<<iBin<<endl<<endl; //////////////////////////////// 12-26
+	double up, dn;
+	if (iBin == 0) {up = 0.80; dn = -0.80;} // 19-09
+//	else if (iBin == 1) {up = 0.95; dn = -0.85;} // 19-09
+	else if (iBin == 9) { up = 0.95; dn = -0.95;}
+	else if (iBin == 1) { up = 0.85; dn = -0.85;}
+//	else if (iBin == 9) { up = 0.89; dn = -0.89;}
+	else { up = 1.; dn = -1.;}
 	 // Read data
-    RooRealVar CosThetaL("CosThetaL", "cos#theta_{L}", -1., 1.);
+    RooRealVar CosThetaL("CosThetaL", "cos#theta_{L}", dn, up);
+    //RooRealVar CosThetaL("CosThetaL", "cos#theta_{L}", -1., 1.);
     RooRealVar Bmass("Bmass","M_{K^{+/-}#Mu#Mu}",5.,5.56);
     RooRealVar Q2("Q2","q^{2}",1.0,22.);
 
@@ -2649,26 +2423,26 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
         // read parameter from datacard
     }
 //	Efficiency
-	RooRealVar effP0("effP0","effP0",readParam(iBin,"accXrecoEff2", 0));
-	RooRealVar effP1("effP1","effP1",readParam(iBin,"accXrecoEff2", 1));
-	RooRealVar effP2("effP2","effP2",readParam(iBin,"accXrecoEff2", 2));
-	RooRealVar effP3("effP3","effP3",readParam(iBin,"accXrecoEff2", 3));   // f1_model_format_1
-	RooRealVar effP4("effP4","effP4",readParam(iBin,"accXrecoEff2", 4));   // f1_model_format_2  // f1_model_format_4
-	RooRealVar effP5("effP5","effP5",readParam(iBin,"accXrecoEff2", 5));   // f1_model_format_2  // f1_model_format_5  
-	RooRealVar effP6("effP6","effP6",readParam(iBin,"accXrecoEff2", 6));   // f1_model_format_2  // f1_model_format_6
-	RooRealVar effP7("effP7","effP7",readParam(iBin,"accXrecoEff2", 7));   // f1_model_format_3  // f1_model_format_7
-	RooRealVar effP8("effP8","effP8",readParam(iBin,"accXrecoEff2", 8));   // f1_model_format_3  // f1_model_format_8
-	RooRealVar effP9("effP9","effP9",readParam(iBin,"accXrecoEff2", 9));   // f1_model_format_3  // f1_model_format_9
-	effP0.setError(readParam(iBin,"accXrecoEff2Err", 0));
-	effP1.setError(readParam(iBin,"accXrecoEff2Err", 1));
-	effP2.setError(readParam(iBin,"accXrecoEff2Err", 2));
-	effP3.setError(readParam(iBin,"accXrecoEff2Err", 3));  // f1_model_format_1
-	effP4.setError(readParam(iBin,"accXrecoEff2Err", 4));  // f1_model_format_2  // f1_model_format_4
-	effP5.setError(readParam(iBin,"accXrecoEff2Err", 5));  // f1_model_format_2  // f1_model_format_5 
-	effP6.setError(readParam(iBin,"accXrecoEff2Err", 6));  // f1_model_format_2  // f1_model_format_6
-	effP7.setError(readParam(iBin,"accXrecoEff2Err", 7));  // f1_model_format_3  // f1_model_format_7
-	effP8.setError(readParam(iBin,"accXrecoEff2Err", 8));  // f1_model_format_3  // f1_model_format_8
-	effP9.setError(readParam(iBin,"accXrecoEff2Err", 9));  // f1_model_format_3  // f1_model_format_9
+	RooRealVar effP0("effP0","effP0",readParam(iBin,"accXrecoEff", 0));
+	RooRealVar effP1("effP1","effP1",readParam(iBin,"accXrecoEff", 1));
+	RooRealVar effP2("effP2","effP2",readParam(iBin,"accXrecoEff", 2));
+	RooRealVar effP3("effP3","effP3",readParam(iBin,"accXrecoEff", 3));   // f1_model_format_1
+	RooRealVar effP4("effP4","effP4",readParam(iBin,"accXrecoEff", 4));   // f1_model_format_2  // f1_model_format_4
+	RooRealVar effP5("effP5","effP5",readParam(iBin,"accXrecoEff", 5));   // f1_model_format_2  // f1_model_format_5  
+	RooRealVar effP6("effP6","effP6",readParam(iBin,"accXrecoEff", 6));   // f1_model_format_2  // f1_model_format_6
+	RooRealVar effP7("effP7","effP7",readParam(iBin,"accXrecoEff", 7));   // f1_model_format_3  // f1_model_format_7
+	RooRealVar effP8("effP8","effP8",readParam(iBin,"accXrecoEff", 8));   // f1_model_format_3  // f1_model_format_8
+	RooRealVar effP9("effP9","effP9",readParam(iBin,"accXrecoEff", 9));   // f1_model_format_3  // f1_model_format_9
+	effP0.setError(readParam(iBin,"accXrecoEffErr", 0));
+	effP1.setError(readParam(iBin,"accXrecoEffErr", 1));
+	effP2.setError(readParam(iBin,"accXrecoEffErr", 2));
+	effP3.setError(readParam(iBin,"accXrecoEffErr", 3));  // f1_model_format_1
+	effP4.setError(readParam(iBin,"accXrecoEffErr", 4));  // f1_model_format_2  // f1_model_format_4
+	effP5.setError(readParam(iBin,"accXrecoEffErr", 5));  // f1_model_format_2  // f1_model_format_5 
+	effP6.setError(readParam(iBin,"accXrecoEffErr", 6));  // f1_model_format_2  // f1_model_format_6
+	effP7.setError(readParam(iBin,"accXrecoEffErr", 7));  // f1_model_format_3  // f1_model_format_7
+	effP8.setError(readParam(iBin,"accXrecoEffErr", 8));  // f1_model_format_3  // f1_model_format_8
+	effP9.setError(readParam(iBin,"accXrecoEffErr", 9));  // f1_model_format_3  // f1_model_format_9
         // Efficiency and acceptance
     RooArgSet f_sigA_argset(CosThetaL);
     f_sigA_argset.add(RooArgSet(fh,afb));
@@ -2685,12 +2459,12 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
     //    f_rec_L3 = "(recK0L3+recK1L3*CosThetaK+recK2L3*CosThetaK**2+recK3L3*CosThetaK**3)*CosThetaL**3";
     //    f_rec_L4 = "(recK0L4+recK1L4*CosThetaK+recK2L4*CosThetaK**2+recK3L4*CosThetaK**3)*CosThetaL**4";
     //    f_rec_L6 = "(recK0L6+recK1L6*CosThetaK+recK2L6*CosThetaK**2+recK3L6*CosThetaK**3)*CosThetaL**6";
-    }else if (iBin == 0){
+    }else if (iBin == 0 || iBin == 1 || iBin == 9){
 		 f_rec_format = "(effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) * ( effP3+effP4*CosThetaL+effP5*CosThetaL**2+effP6*CosThetaL**3+effP7*CosThetaL**4+effP8*CosThetaL**5+effP9*CosThetaL**6 )";
 		 //f_rec_format = "effP0+effP1*CosThetaL+effP2*(3*CosThetaL**2-1)/2+effP3*(5*CosThetaL**3-3*CosThetaL)/2+effP4*(35*CosThetaL**4-30*CosThetaL**2+3)/8.+effP5*(63*CosThetaL**5-70*CosThetaL**3+15*CosThetaL)/8.+effP6*(231*CosThetaL**6-315*CosThetaL**4+105*CosThetaL**2-5)/16.+effP7*(429*CosThetaL**7-693*CosThetaL**5+315*CosThetaL**3-35*CosThetaL)/16.";
-    }else if (iBin == 1) {
+    }else if (iBin == 20) {
 		 f_rec_format = "(( effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) + ( effP3*exp(-0.5*((CosThetaL-effP4)/effP5)**2)) + ( effP6*exp(-0.5*((CosThetaL-effP7)/effP8)**2) ) + effP9)";
-	 }else if (iBin !=0 && iBin != 1) {
+	 }else if (iBin !=0 && iBin != 1 && iBin != 9) {
 		 f_rec_format = "(effP0*exp(-0.5*((CosThetaL-effP1)/effP2)**2) ) * ( effP3+effP4*CosThetaL+effP5*CosThetaL**2+effP6*CosThetaL**3+effP7*CosThetaL**4+effP8*CosThetaL**5+effP9*CosThetaL**6 )";
 	 }
 
@@ -2823,8 +2597,10 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
             bkgM_frac12.setConstant(kTRUE);
             //bkgM_frac2.setConstant(kTRUE);
             break;
-        case 9:
+     /*   case 9:
             //1 double guassian ,4+4 deg. ploy
+            bkgM_frac12.setVal(1.);
+            bkgM_frac12.setConstant(kTRUE);
             bkgM_frac12.setVal(1.);
             bkgM_frac12.setConstant(kTRUE);
         bkgPeakL_c1.setMin(NULL,0.);
@@ -2836,7 +2612,7 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
         bkgPeakL_c4.setMin(NULL,0.);
         bkgPeakL_c4.setVal(0.);
 				break;
-        case 10:
+     */   case 10:
             //2 double guassian ,4+4 deg. ploy
             //bkgM_frac12.setConstant(kTRUE);
             //bkgM_frac2.setConstant(kTRUE);
@@ -2861,7 +2637,8 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
 	 nbkgPeak.setConstant(kTRUE);
     //RooRealVar nbkgPeak("nbkgPeak","nbkgPeak",50,0.,1E4);
     //if (iBin !=10 && ( iBin == 0 || iBin %2 == 1 || iBin/2 > 3) ){
-    if (iBin !=9 && iBin !=10 && ( iBin == 0 || iBin %2 == 1 || iBin/2 > 3) ){
+    //if (iBin !=9 && iBin !=10 && ( iBin == 0 || iBin %2 == 1 || iBin/2 > 3) ){
+    if (iBin !=10 && ( iBin == 0 || iBin %2 == 1 || iBin/2 > 3) ){
         nbkgPeak.setMin(NULL,0.);
         nbkgPeak.setVal(0.);
         nbkgPeak.setConstant(kTRUE);
@@ -2927,13 +2704,13 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
             //gausConstraints.add(RooArgSet(gaus_bkgGauss2_mean1,gaus_bkgGauss2_sigma1));
             gausConstraints.add(gaus_nbkgPeak);
             break;
-        case 9:
+     /*   case 9:
             //1 double guassian ,4+4 deg. ploy
-            gausConstraints.add(RooArgSet(gaus_bkgPeakL_c1,gaus_bkgPeakL_c2,gaus_bkgPeakL_c3,gaus_bkgPeakL_c4));
-            gausConstraints.add(RooArgSet(gaus_bkgGauss1_mean1,gaus_bkgGauss1_mean2,gaus_bkgGauss1_sigma1,gaus_bkgGauss1_sigma2,gaus_bkgM_frac1));
-            gausConstraints.add(gaus_nbkgPeak);
+            //gausConstraints.add(RooArgSet(gaus_bkgPeakL_c1,gaus_bkgPeakL_c2,gaus_bkgPeakL_c3,gaus_bkgPeakL_c4));
+            //gausConstraints.add(RooArgSet(gaus_bkgGauss1_mean1,gaus_bkgGauss1_mean2,gaus_bkgGauss1_sigma1,gaus_bkgGauss1_sigma2,gaus_bkgM_frac1));
+            //gausConstraints.add(gaus_nbkgPeak);
             break;
-        case 10:
+     */   case 10:
             //2 double guassian ,4+4 deg. ploy
             gausConstraints.add(RooArgSet(gaus_bkgPeakL_c1,gaus_bkgPeakL_c2,gaus_bkgPeakL_c3,gaus_bkgPeakL_c4));
             gausConstraints.add(RooArgSet(gaus_bkgGauss1_mean1,gaus_bkgGauss1_mean2,gaus_bkgGauss1_sigma1,gaus_bkgGauss1_sigma2,gaus_bkgM_frac1));
@@ -3073,8 +2850,7 @@ std::vector<double> angular2D_bin(int iBin, const char outfile[] = "angular2D")
     return output;
 }//}}}
 
-void angular(const char outfile[] = "angular", bool doFit = true)
-//void angular_reco(const char outfile[] = "angular_reco")
+void angular2D( const char outfile[] = "angular2D")
 {//{{{
 //	doFit = false;
 	double x[9]   ={1.50, 3.15, 6.49,  11.475,  15.09, 17.0, 20.0, 3.5, 11.5};
@@ -3084,63 +2860,25 @@ void angular(const char outfile[] = "angular", bool doFit = true)
 		yfh[i]  = 0; yuerrfh[i]  = 0; yderrfh[i]  = 0;
 		yafb[i] = 0; yuerrafb[i] = 0; yderrafb[i] = 0;
 	}
-
-    if (doFit){
-        angular2D_bin(0);
-        angular2D_bin(1);
-        angular2D_bin(2);
-        //angular2D_bin(3);
-        angular2D_bin(4);
-        //angular2D_bin(5);
-        angular2D_bin(6);
-        angular2D_bin(7);
-        angular2D_bin(8);
-        angular2D_bin(9);
-        angular2D_bin(10);
-    }
-/*	 
-   if (doFit){ // Turn to true if you want to fit again.
-		std::vector<double> vbin;
-		for(int ibin = 0, i = 0; i < 11; i++){
-			if (i == 3 || i == 5) continue;
-		//	if (i != 9) continue;
-			vbin = angular2D_bin(i);
-			yfh[ibin]       =vbin.at(0);
-			yuerrfh[ibin]    =vbin.at(1);
-			if (yuerrfh[ibin] > yfh[ibin]) { yderrfh[ibin] = yfh[ibin];}
-			else yderrfh[ibin] = yuerrfh[ibin];
-			yafb[ibin]      =vbin.at(2);
-			yerrafb[ibin]   =vbin.at(3);
-			ibin++;
-		}
+// Checkout input data
+	for(int i = 0, ibin = 0; i < 9, ibin < 11; i++, ibin++){
+		if (i == 3) ibin++;
+		if (i == 4) ibin++;
+		cout<<"iBin = "<<ibin<<endl;
+		yafb[i]      = readParam(ibin,"afb",0);
+		yuerrafb[i]  = fabs(readParam(ibin,"afb",1));
+		yderrafb[i]  = yuerrafb[i];
+		yfh[i]       = readParam(ibin,"fh",0);
+		yuerrfh[i]   = fabs(readParam(ibin,"fh",1));
+		if (yuerrfh[i] > fabs(yfh[i])) { yderrfh[i] = fabs(yfh[i]);}
+		else { yderrfh[i] = yuerrfh[i]; }
+		printf("Afb[%d]=%6.4f +- %6.4f\n",i,yafb[i],yuerrafb[i]);
+		printf("Fh [%d]=%6.4f +- %6.4f\n",i,yfh[i],yuerrfh[i]);
 	}
-*/
-    // Checkout input data
-		for(int ibin = 0, i = 0; i < 9, ibin < 11; i++, ibin++){
-			if (i == 3) ibin++; // i = 3, ibin = 4;
-			if (i == 4) ibin++; // i = 4, ibin = 6;
-			yafb[i]      = readParam(ibin,"afb",0);
-			yuerrafb[i]  = fabs(readParam(ibin,"afb",1));
-			yderrafb[i]  = yuerrafb[i];
-
-			yfh[i]       = readParam(ibin,"fh",0);
-			yuerrfh[i]   = fabs(readParam(ibin,"fh",1));
-			if (yuerrfh[i] > fabs(yfh[i])) { yderrfh[i] = fabs(yfh[i]);}
-			else { yderrfh[i] = yuerrfh[i]; }
-			printf("yafb[%d]=%6.4f +- %6.4f\n",ibin,yafb[i],yuerrafb[i]);
-			printf("yfh [%d]=%6.4f +- %6.4f\n",ibin,yfh[i],yuerrfh[i]);
-    }
-    
-    // Draw
-    TCanvas *c = new TCanvas("c");
-    TH1F *frame = new TH1F("frame","",22,0.,22);
-    frame->SetStats(kFALSE);
-
-    frame->SetXTitle("q^{2} [(GeV)^{2}]");
-    frame->SetYTitle("F_{H}");
-    //frame->SetAxisRange(-0.1,0.7,"Y");
-    frame->SetAxisRange(-0.1,1.,"Y");
-    frame->Draw();
+//	Draw
+	TCanvas *c = new TCanvas("c");
+	TH1F *frame = new TH1F("frame","",22,0.,22);
+	frame->SetStats(kFALSE);
 	frame->GetYaxis()->SetLabelFont(22);
 	frame->GetYaxis()->SetLabelSize(0.04);
 	frame->GetYaxis()->SetTitleSize(0.04);
@@ -3151,46 +2889,37 @@ void angular(const char outfile[] = "angular", bool doFit = true)
 	frame->GetXaxis()->SetTitleSize(0.04);
 	frame->GetXaxis()->SetTitleOffset(1.15);
 	frame->GetXaxis()->SetTitleFont(22);
-    TGraphAsymmErrors *d_fh  = new TGraphAsymmErrors(7,x,yfh,xerr,xerr,yderrfh,yuerrfh);
+	frame->SetTitle("");
+	frame->Draw();
+	
+	frame->SetXTitle("q^{2} [(GeV)^{2}]");
+	frame->SetYTitle("F_{H}");
+	frame->SetAxisRange(-0.1,1.,"Y");
+	TGraphAsymmErrors *d_fh  = new TGraphAsymmErrors(7,x,yfh,xerr,xerr,yderrfh,yuerrfh);
 	d_fh->SetMarkerColor(1);
 	d_fh->SetMarkerStyle(20);
-//	d_fh->SetLineWidth(0.005);
-	
+//	d_fh->SetLineWidth(0.005);	
 	d_fh->SetFillColor(2);
 	d_fh->SetFillStyle(3001);
 	d_fh->Draw("2");
 	d_fh->Draw("P");
-//    c->Print(TString::Format("./plots/%s_fh.pdf",outfile));
-    c->Print(TString::Format("./plots/%s_fh.png",outfile));
-    c->Clear();
-
-    frame->SetTitle("");
-    frame->SetXTitle("q^{2} [(GeV)^{2}]");
-    frame->SetYTitle("A_{FB}");
-    //frame->SetAxisRange(-0.5,0.5,"Y");
-    frame->SetAxisRange(-1.,1.,"Y");
-    frame->Draw();
-	frame->GetYaxis()->SetLabelFont(22);
-	frame->GetYaxis()->SetLabelSize(0.04);
-	frame->GetYaxis()->SetTitleSize(0.04);
-	frame->GetYaxis()->SetTitleOffset(1.2);
-	frame->GetYaxis()->SetTitleFont(22);
-	frame->GetXaxis()->SetLabelFont(22);
-	frame->GetXaxis()->SetLabelSize(0.04);
-	frame->GetXaxis()->SetTitleSize(0.04);
-	frame->GetXaxis()->SetTitleOffset(1.15);
-	frame->GetXaxis()->SetTitleFont(22);
-    TGraphAsymmErrors *d_afb = new TGraphAsymmErrors(7,x,yafb,xerr,xerr,yderrafb,yuerrafb);
+//	c->Print(TString::Format("./plots/%s_fh.pdf",outfile));
+	c->Print(TString::Format("./plots/%s_fh.png",outfile));
+	c->Clear();
+	
+	frame->SetXTitle("q^{2} [(GeV)^{2}]");
+	frame->SetYTitle("A_{FB}");
+	frame->SetAxisRange(-1.,1.,"Y");
+	TGraphAsymmErrors *d_afb = new TGraphAsymmErrors(7,x,yafb,xerr,xerr,yderrafb,yuerrafb);
 	d_afb->SetMarkerColor(1);
 	d_afb->SetMarkerStyle(20);
-//	d_afb->SetLineWidth(0.005);
-	
+//	d_afb->SetLineWidth(0.005);	
 	d_afb->SetFillColor(2);
 	d_afb->SetFillStyle(3001);
 	d_afb->Draw("2");
 	d_afb->Draw("P");
-//    c->Print(TString::Format("./plots/%s_afb.pdf",outfile));
-    c->Print(TString::Format("./plots/%s_afb.png",outfile));
+//	c->Print(TString::Format("./plots/%s_afb.pdf",outfile));
+	c->Print(TString::Format("./plots/%s_afb.png",outfile));
 }//}}}
 
 //////////////////////////////////////////////////////////////////////////
@@ -3201,10 +2930,9 @@ int main(int argc, char** argv) {
 	is7TeVCheck = false;   
 //	Help message
 	if (argc <= 2) {
-		printf("Usage       : ./fit Function infile\n");
+		printf("Usage       : ./fit Function infile binID\n");
 		printf("Functions   :\n");
-		printf("    bmass               Fit to mass spectrum using a double Gaussian signal and Chebyshev bkg.\n");
-	//	printf("    fh_gen              Derive F_{H} and A_{FB} from cosThetaL distribution at GEN level.\n");
+		printf("    0. bmass               Fit to mass spectrum using a double Gaussian signal and Chebyshev bkg.\n");
 		printf("    1. angular_gen         Derive F_{H} and A_{FB} from cosThetaL distribution at GEN level.\n");
 		printf("       acceptance          Get acceptance map from unfiltered signal GEN, |Mu pT| > 2.8 GeV, |Mu eta| < 2.3.\n");
 		printf("       recoEff             Get reconstruction efficiency map from signal simulation.\n");
@@ -3222,34 +2950,38 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 //	main
+	if (argc != 4){
+		printf("./fit func infile binID\n");
+		for (int i = 0; i < 11; i++) {
+		//	if (i == 3 || i == 5) continue;
+			printf("    Bin %d : %s\n",i,Q2range[i]);
+		}
+		return 0;
+	}
 	TString func    = argv[1];
 	TString infile  = argv[2];
+	int iBin        = atoi(argv[3]);
 	
 	if (func == "bmass") {
-		if (argc != 4){
-			printf("./fit bmass infile binID\n");
-			for (int i = 0; i < 11; i++) {
-			//	if (i == 3 || i == 5) continue;
-				printf("    Bin %d : %s\n",i,Q2range[i]);
-			}
-			return 0;
-		}
-		int iBin = atoi(argv[3]);
 		ch->Add(infile.Data());
 		if (ch == NULL) gSystem->Exit(0);
 		const char outfile[]="bmass";
 		bmass(iBin, outfile); 
-/*	}else if (func == "fh_gen"){
-		ch->Add(infile.Data());
-		if (ch == NULL) gSystem->Exit(0);
-		const char outfile[]="fh_gen";
-		fh_gen(outfile);
-*/	}else if (func == "angular_gen"){
-		ch->Add(infile.Data());
-		if (ch == NULL) gSystem->Exit(0);
-		const char outfile[]="angular_gen";
-		angular_gen(outfile);
-	}else if (func == "acceptance") {
+	}else if (func == "angular_gen"){
+		if (iBin >= 0 && iBin < 11) {
+			ch->Add(infile.Data());
+			if (ch == NULL) gSystem->Exit(0);
+			std::vector<double> vbin;
+			cout<<endl<<">>>>>>>>>> iBin = "<<iBin<<endl;
+			vbin = angular_gen_bin(iBin);
+		}else if (iBin == 999) {
+			const char outfile[]="angular_gen";
+			angular_gen(outfile);
+		}else { 
+			cout<<"Refit gen level,iBin counts from 0 to 10, or 999!"<<endl;
+			return 0; 
+		}
+/*	}else if (func == "acceptance") {
 		ch->Add(infile.Data());
 		if (ch == NULL) gSystem->Exit(0);
 		for (int iBin = 0; iBin < 11; iBin++) {
@@ -3263,71 +2995,61 @@ int main(int argc, char** argv) {
 			if (iBin == 3 || iBin == 5) continue;
 			recoEff(iBin);
 		}
-	}else if (func == "accXrecoEff") {
-		ch->Add(infile.Data());
-		createAccptanceHist(); // Set to true if no given ./RootFiles/acceptance_8TeV.root
-	//	ch->Add(infile.Data());
-		if (ch == NULL) gSystem->Exit(0);
-		for (int iBin = 0; iBin < 11; iBin++) {
-		//	if (iBin !=9 && iBin !=1 && iBin != 0) continue;
-			if (iBin == 3 || iBin == 5) continue;
-		//	if (iBin != 0 ) continue;  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//	accXrecoEff(iBin);//old style efficiency fitter
-			accXrecoEff2(iBin);
+*/	}else if (func == "accXrecoEff") {
+		if (iBin >= 0 && iBin < 11) {
+			ch->Add(infile.Data());
+			if (ch == NULL) gSystem->Exit(0);
+			cout<<endl<<">>>>>>>>>> iBin = "<<iBin<<endl;
+			accXrecoEff(iBin);
+		}else if (iBin == 999) {
+			createAccptanceHist(); // Set to true if no given ./RootFiles/acceptance_8TeV.root
+		}else { 
+			cout<<"Calculate efficiency, iBin counts from 0 to 10; or 999 for acceptance!"<<endl;
+			return 0; 
 		}
 	}else if (func == "angular_reco"){
-		ch->Add(infile.Data());
-		if (ch == NULL) gSystem->Exit(0);
-		const char outfile[]="angular_reco";
-		angular_reco(outfile);
-	}
-	 
-	 
-/*	 
-	 else if (func == "angular2D"){
-        ch->Add(infile.Data());
-        if (ch == NULL) gSystem->Exit(0);
-        const char outfile[]="angular2D";
-        for (int iBin = 0; iBin < 8; iBin++) {
-            if (iBin == 3 || iBin == 5) continue;
-            angular2D_bin(iBin);
-        }
-    }
-*/	 
-	 else if (func == "angular2D_1a_Sm" || func == "angular2D_1b_YpPm" || func == "angular2D_2a_PkPl" || func == "angular2D_prior"){
-        void (*fx)(int, const char*, bool);
-        if ( func == "angular2D_1a_Sm" ){
-            fx = angular2D_1a_Sm;
-        }else if (func == "angular2D_1b_YpPm"){
-            fx = angular2D_1b_YpPm;
-        }else if (func == "angular2D_2a_PkPl"){
-            fx = angular2D_2a_PkPl;
-        }else{
-            fx = angular2D_prior;
-        }
-        ch->Add(infile.Data());
-        if (ch == NULL) gSystem->Exit(0);
-        for (int iBin = 0; iBin < 11; iBin++) {
-			  if (iBin == 3 || iBin == 5) continue;     /////////////////////////////////////// 12-24
-			  fx(iBin,func,true);// By default overwrite exist parameters.
-        }
-    }
-	 else if (func == "angular2D"){
-        if (argc != 4){
-            printf("./fit angular2D infile doFit\n");
-            printf("    If dofit is non-zero, perform fit and write results first.\n");
-            printf("    Else, directly read fitParameters?.txt and make plots.\n");
-            return 0;
-        }
-        bool doFit = false;
-        if ( atoi(argv[3]) != 0 ) doFit = true;
-
-        ch->Add(infile.Data());
-        if (ch == NULL) gSystem->Exit(0);
-        const char outfile[]="angular2D";
-        angular(outfile, doFit);
-    }
-	 
+		if (iBin >= 0 && iBin < 11) {
+			ch->Add(infile.Data());
+			if (ch == NULL) gSystem->Exit(0);
+			std::vector<double> vbin;
+			cout<<endl<<">>>>>>>>>> iBin = "<<iBin<<endl;
+			vbin = angular_reco_bin(iBin);
+		}else if (iBin == 999) {
+			const char outfile[]="angular_reco";
+			angular_reco( outfile);
+		}else { 
+			cout<<"Refit reco level,iBin counts from 0 to 10; or 999 to plot the results!"<<endl;
+			return 0; 
+		}
+	}else if (func == "angular2D_1a_Sm" || func == "angular2D_1b_YpPm" || func == "angular2D_2a_PkPl" || func == "angular2D_prior"){
+		void (*fx)(int, const char*, bool);
+		if ( func == "angular2D_1a_Sm" ){
+			fx = angular2D_1a_Sm;
+			}else if (func == "angular2D_1b_YpPm"){
+				fx = angular2D_1b_YpPm;
+			}else if (func == "angular2D_2a_PkPl"){
+				fx = angular2D_2a_PkPl;
+			}else{
+				fx = angular2D_prior;
+			}
+			ch->Add(infile.Data());
+			if (ch == NULL) gSystem->Exit(0);
+			fx(iBin,func,true);// By default overwrite exist parameters.
+	}else if (func == "angular2D"){
+		if (iBin >= 0 && iBin < 11) {
+			ch->Add(infile.Data());
+			if (ch == NULL) gSystem->Exit(0);
+			std::vector<double> vbin;
+			cout<<endl<<">>>>>>>>>> iBin = "<<iBin<<endl;
+			vbin = angular2D_bin(iBin);
+		}else if (iBin == 999) {
+			const char outfile[]="angular2D";
+			angular2D(outfile);
+		}else { 
+			cout<<"Refit data, iBin counts from 0 to 10; or 999 to plot the results!"<<endl;
+			return 0; 
+		}
+	} 
 // 04-09-2014
 /////////////////////////////////////////////////////////////////////////////////////////////
 	 else if (func == "test"){
@@ -3337,7 +3059,7 @@ int main(int argc, char** argv) {
         for (int iBin = 0; iBin < 8; iBin++) {
             //getToyFromUnfilterGen(iBin);
             //createRecoEffHist(iBin);
-            //accXrecoEff2(iBin);
+            //accXrecoEff(iBin);
             //angular2D_bin(iBin);
         }
         //createAccptanceHist();
