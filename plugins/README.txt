@@ -20,8 +20,12 @@ Run Fitter:
 	mkdir plots/
 	mkdir RootFiles/
 	mkdir fitParameters/
+	mkdir OutputValues/  # ( and bin0/ bin1/ .... bin10)
 	
 	./fit <function> <input.root> <iBin>
+
+
+STEP BY STEP:
 
 0.Test on Data Bmass fitter
 	
@@ -35,33 +39,51 @@ Run Fitter:
 	
 	./fit accXrecoEff AllCut/MC_Signal_AllCuts_v3.root <iBin>
 
-3.Angular fitter in reco level         
+3.Angular fitter in gen level NEW!!!!!!!!!!!!!!!!         
+	
+	./fit angular_gen_R AllCut/MC_Signal_AllCuts_v3.root <iBin>
+
+4.Angular fitter in reco level         
 	
 	./fit angular_reco AllCut/MC_Signal_AllCuts_v3.root <iBin>
 
-4.Get bmass shape from signal mc       
+5.Get bmass shape from signal mc       
 	
 	./fit angular2D_1a_Sm AllCut/MC_Signal_AllCuts_v3.root <iBin>
 
-5.Get bmass peaking bkg. from mc      
+6.Get JpsiK bmass & cosThetaL peaking bkg. from mc      
+	
+	(go to line 2460, uncomment this line: 
+	const char read1b[] = "angular2D_1b_YpPm_Jpsi"; )
 	
 	./fit angular2D_1b_YpPm AllCut/MC_JPsiK_AllCuts_v3.root <iBin>
+
+	./fit angular2D_2a_PkPl AllCut/MC_JPsiK_AllCuts_v3.root <iBin>
+	
+7.Get PsiK bmass & cosThetaL peaking bkg. from mc   
+	
+	(go to line 2461, uncomment this line: 
+	const char read1b[] = "angular2D_1b_YpPm_Psi"; )
 	
 	./fit angular2D_1b_YpPm AllCut/MC_Psi2SK_AllCuts_v3.root <iBin>
 
-6.Get cosThetaL peaking bkg. from mc   
-	
-	./fit angular2D_2a_PkPl AllCut/MC_JPsiK_AllCuts_v3.root <iBin>
-   
 	./fit angular2D_2a_PkPl AllCut/MC_Psi2SK_AllCuts_v3.root <iBin>
 
-7.Get cosThetaL comb. bkg. from data   
+8.Get cosThetaL comb. bkg. from data   
 	
 	./fit angular2D_prior AllCut/Data_KMuMu_AllCuts_v3.root <iBin>
 
-8.Angular fitter in data              
+9.Angular fitter in data              
 	
 	./fit angular2D AllCut/Data_KMuMu_AllCuts_v3.root <iBin> 
+
+	For data fitting test:  ./fit <function> <input.root> <iBin> <afb> <fh> test
+
+	For initial values scanning:  ./fit <function> <input.root> <iBin>
+
+	For FCN ploting:  ./fit PlotFCN ../RootFiles/AllCut/Data_KMuMu_AllCuts_v3.root <iBin>
+
+	For refit with final initial values:  ./fit <function> <input.root> <iBin>	refit
 
 
 
