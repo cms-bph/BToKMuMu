@@ -31,11 +31,31 @@ Fit with batch mode using python: ( First of all, make sure that "test = False" 
 
 The commands are collected in .sh files:  
 	
-	gen.sh                 for Gen level fitter.   
+	gen.sh                   for GEN level fitter.   
 	
-	accXreco.sh            for Efficiency calculation and fit.
+	accXreco.sh              for Efficiency calculation and fit.
 
-	reco.sh                for Reco level fitter.
+	gen_R.sh                 for (RECO / Acceptance) angular fitting.
+
+	reco.sh                  for RECO level fitter.
+
+	angular2D_1a_Sm_local.sh for Bmass shape from signal MC, localy run.
+
+	angular2D_1a_Sm.sh       for Bmass shape from signal MC, run with jobs.
+
+	1b2a_jpsi.sh             for JpsiK peaking bkg.
+
+	1b2a_psi.sh              for PsiK peaking bkg.
+
+	prior.sh                 for Comb. bkg. from data sideband.
+	
+	test_d.sh                for data fit test with initial values.
+
+	run.sh                   for data fit scanning with random initial values.
+
+	fcn.sh                   for FCN values ploting and get the smallest one.
+
+	ReFit.sh                 for final fitting results with best initial values.
 	
 
 
